@@ -1,102 +1,10 @@
 import numpy as np
 import networkx as nx
+from compute_J import determine_stability
 from strategy_optimization import nash_equilibrium
 
-def correct_scale_params(scale_params,alloc_params,i):
-  '''
-  Corrects scale parameters (either sigmas or lambdas) to be consisent with optimization
-  results. Takes in scale parameters (2d) and strategy parameters for a particular actor (1d), and
-  sets scale parameters to 0 if the corresponding strategy parameters are 0, then ensures
-  that the scale parameters still add to 1.
-  '''
-  scale_params[:,i][alloc_params==0] = 0
-  for i in range(sum(alloc_params==0)):
-    scale_params[alloc_params==0][i][scale_params[alloc_params==0][i]!=0] = np.squeeze(np.random.dirichlet(np.ones(len(scale_params[alloc_params==0][i][scale_params[alloc_params==0][i]!=0])),1))
-  return scale_params
-
-
-def determine_stability(N,K,M,T,phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,
-theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,
-dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F,H,w_p,w_n,K_p,K_n,D_jm):
-  # compute Jacobian (vectorized)
-  J = np.zeros([T,T])
-  # dr•/dr
-  J[0,0] = phi*(ds_dr - np.sum(np.squeeze(psis*de_dr)))
-                                            # 1xn
-  # dr•/dx (1x(N))
-  # For the NxMxN stuff: i = axis 0, m = axis 1, n = axis 2
-  J[0,1:N+1] = -phi * np.sum(
-        np.multiply(psis,np.sum(np.multiply(de_dg, dg_dF * F),axis = 1)),
-                                          # 1xmxn   ixmxn
-       axis = 1)
-
-  # dr•/dy
-  J[0,N+1:] = -phi * np.sum(
-        np.multiply(psis, np.squeeze(de_dg) * dg_dy),
-                   # 1xn             1xmxn      mxn
-       axis = 1)
-  # dx•/dr
-  J[1:N+1,0] = np.squeeze(alphas * (betas*db_de*de_dr + beta_hats*dq_da*da_dr))
-                                           # 1xn
-  # dx•/dx for n != i
-  J[1:N+1,1:N+1] = np.transpose(np.multiply(alphas,
-        np.multiply(betas*db_de,     np.sum(np.multiply(de_dg,dg_dF*F),axis = 1))
-                     #  1xn                                 ixmxn
-        + np.multiply(beta_hats*dq_da, np.sum(np.multiply(da_dp,dp_dH*H),axis = 1))
-        + np.multiply(beta_tildes,sigmas*dc_dw_p*w_p)
-                       # 1xn            ixn
-        - np.multiply(etas,lambdas*dc_dw_n*w_n)
-       ))
-  # dx•/dx for n = i (overwrite the diagonal)
-  indices = np.arange(1,N+1)  # Access the diagonal of the actor part.
-  J[indices,indices] = np.squeeze(alphas) * (
-        np.squeeze(betas*db_de)*np.sum(np.squeeze(de_dg)*np.diagonal(dg_dF,axis1=0, axis2=2)*np.diagonal(F,axis1=0, axis2=2),axis=0)
-        #                                                          mxn                                 mxn
-        + np.squeeze(beta_hats*dq_da)*np.sum(np.squeeze(da_dp)*np.diagonal(dp_dH,axis1=0, axis2=2)*np.diagonal(H,axis1=0, axis2=2),axis=0)
-        - eta_bars*dl_dx
-      )
-  # dx•/dy
-  J[1:N+1,N+1:] = np.transpose(alphas * (
-        np.multiply(betas*db_de,np.squeeze(de_dg)*dg_dy))
-                    # 1n   1n               1mn     mn
-        + np.multiply(beta_hats*dq_da,np.squeeze(da_dp)*dp_dy)
-      )
-
-  # dy•/dr = 0
-  # dy•/dx, result is mxi
-  J[N+1:,1:N+1] = np.transpose(np.multiply(mus,
-      np.multiply(rhos,di_dK_p*K_p)
-      - np.multiply(thetas,di_dK_n*K_n)
-      + np.multiply(np.squeeze(rho_bars,axis=2),np.sum(np.multiply(omegas,dt_dD_jm*D_jm),axis=2))
-                                                                         # ixmxj
-      - np.multiply(np.squeeze(theta_bars,axis=1),np.sum(np.multiply(epsilons,dt_dD_jm*D_jm), axis=1))))
-                                                                               # ixjxm
-
-  # dy•/dy for m != j, result is mxj
-  J[N+1:,N+1:] = np.multiply(np.transpose(mus),(np.squeeze(
-                                         # 1m
-        np.multiply(rho_bars,omegas*dtmj_dym)
-                    # 1m1        1mj
-        - np.transpose(np.multiply(theta_bars,epsilons*dtjm_dym),(0,2,1))
-                                    # 11m            1jm
-      )))
-
-  # dy•/dy for m = j
-  indices = np.arange(N+1,T)  # Access the diagonal of the governing agency part.
-  J[indices,indices] = np.squeeze(mus*rhos*di_dy_p - thetas*di_dy_n
-      + np.squeeze(rho_bars, axis = 2)*np.sum(omegas*dtjm_dym, axis = 2)
-      - np.squeeze(theta_bars, axis = 1)*np.sum(epsilons*dtmj_dym, axis=1))
-  # compute the eigenvalues of the Jacobian
-  eigvals = np.linalg.eigvals(J)
-  if all(eigvals.real) < 10e-5: # stable if real part of eigenvalues is negative
-    stability = True
-  else:
-    stability = False # unstable if real part is positive, inconclusive if 0
-  return J,eigvals,stability
-
-
 def sample(N1,N2,N3,K,M,T,C1,C2):  ## Sunshine: Maybe comment on each parameter that has multiple N's or M's
-                                   ## to disambiguate what each index is.
+  np.random.seed(0)                               ## to disambiguate what each index is.
   N = N1 + N2 + N3 + K
   is_connected = False
   while is_connected == False:
@@ -114,7 +22,7 @@ def sample(N1,N2,N3,K,M,T,C1,C2):  ## Sunshine: Maybe comment on each parameter 
     betas[0,0:N1] = np.random.rand(N1)
     beta_tildes[0,0:N1] = 1 - betas[0,0:N1]
     # beta parameters for resource users with both uses
-    beta_params = np.random.dirichlet(np.ones(3),N2-N1+1).transpose()
+    beta_params = np.random.dirichlet(np.ones(3),N2).transpose()
     betas[0,N1:N2+N1] = beta_params[0]
     beta_tildes[0,N1:N2+N1] = beta_params[1]
     beta_hats[0,N1:N2+N1] = beta_params[2]
@@ -138,12 +46,17 @@ def sample(N1,N2,N3,K,M,T,C1,C2):  ## Sunshine: Maybe comment on each parameter 
     rhos = np.random.rand(1,M) # $
     rho_bars = np.reshape(1 - rhos,(1,M,1)) # want to be 1,m,1$
 
-    omegas = np.zeros([1,M,M]) # omegas_m,j is 1xjxm $
+    omegas = np.zeros([1,M,M]) # omegas_m,j is 1xjxm, want to sum to 1 along m
 
     if M != 1:
-        links = np.random.rand(1,M,M) < C2 # gov org to  gov org connectance
-        omegas = construct_links(omegas,links)
-
+        links = (np.random.rand(1,M,M) < C2) # gov org to  gov org connectance
+        links_per_col = np.squeeze(np.sum(links, axis=1))
+        for i in range(M):
+          # skip if no links in that col
+          if links_per_col[i] == 0:
+            continue
+          else:
+            omegas[0,links[0,i],i] = np.squeeze(np.random.dirichlet(np.ones(links_per_col[i]),1))
 
     thetas = np.random.rand(1,M)# $
     theta_bars = (1 - thetas).reshape(1,1,M) # want to be 1,1,m $
@@ -193,37 +106,38 @@ def sample(N1,N2,N3,K,M,T,C1,C2):  ## Sunshine: Maybe comment on each parameter 
     K_p = np.random.rand(N,M) # effort for more influence for gov orgs $
     K_n = np.random.rand(N,M) # effort for less influence for gov orgs $
     D_jm = np.random.rand(N,M,M) # D_i,j,m is ixmxj effort for transferring power from each gov org to each other $
+
     # strategy optimization
     # calculate Jacobian
     J,eigvals,stability = determine_stability(N,K,M,T, phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,
         theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,
         dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F,H,w_p,w_n,K_p,K_n,D_jm)
     # find nash equilibrium strategies
-    nash_equilibrium(100,J,N,K,M,T,phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,
-                     theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,
-                     dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F,H,w_p,w_n,K_p,K_n,D_jm)
-
-    is_connected = True
-    # compute Jacobian to check whether system is weakly connected
-    J,eigvals,stability = determine_stability(N,K,M,T, phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,
-        theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,
-        dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F,H,w_p,w_n,K_p,K_n,D_jm)
-
+#    F,H,w_p,w_n,K_p,K_n,D_jm,sigmas,lambdas = nash_equilibrium(200,J,N,K,M,T,phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,
+#                     theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,
+#                     dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F,H,w_p,w_n,K_p,K_n,D_jm)
+#
+#    is_connected = True
+#    # compute Jacobian to check whether system is weakly connected
+#    J,eigvals,stability = determine_stability(N,K,M,T, phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,
+#        theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,
+#        dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F,H,w_p,w_n,K_p,K_n,D_jm)
+#
 
     adjacency_matrix = np.zeros([T,T])
     adjacency_matrix[J!=0] = 1
     graph = nx.from_numpy_array(adjacency_matrix,create_using=nx.DiGraph)
     is_connected = nx.is_weakly_connected(graph)
 
-  return phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas, \
+  return stability,J,phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas, \
       theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n, \
       dt_dD_jm, di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F,H,w_p,w_n,K_p,K_n,D_jm
 
 
 # Size of system
-N1 = 1 # number of resource users that benefit from extraction only
+N1 = 2 # number of resource users that benefit from extraction only
 N2 = 0 # number of users with both extractive and non-extractive use
-N3 = 2 # number of users with only non-extractive use
+N3 = 0 # number of users with only non-extractive use
 K = 0 # number of bridging orgs
 N = N1 + N2 + N3 + K # total number of resource users
 M = 1 # number of gov orgs
@@ -236,7 +150,7 @@ def main():
   num_stable_webs = 0
   num_samples = 1
   for _ in range(num_samples):
-    phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas, \
+    stability,J,phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas, \
         theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n, \
         dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F,H,w_p,w_n,K_p,K_n,D_jm = sample(N1,N2,N3,K,M,T,C1,C2)
 
@@ -251,11 +165,11 @@ def main():
     if stability:
       num_stable_webs += 1
   print(num_stable_webs/num_samples)
-  return phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas, \
+  return total_connectance,phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas, \
       theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n, \
       dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F,H,w_p,w_n,K_p,K_n,D_jm,J
 
 if __name__ == "__main__":
-  phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas, \
+  total_connectance, phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas, \
       theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n, \
       dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F,H,w_p,w_n,K_p,K_n,D_jm,J = main()

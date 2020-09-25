@@ -1,7 +1,7 @@
 import numpy as np
 import scipy as sp  ## Sunshine: Is this abbreviation common (like np is)? You don't use sp much in the code.
-from GM_code import determine_stability
-from GM_code import correct_scale_params
+from compute_J import determine_stability
+from compute_J import correct_scale_params
 
 
 def objective_grad(strategy,n,l,J,N,K,M,T,phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,
@@ -42,6 +42,7 @@ dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F,H,w_p,w_n,K_p,K_n,D_jm):
   dxdot_dH = np.zeros([N,N,M,N])
   dxdot_dH[np.arange(0,N),:,:,np.arange(0,N)] = np.transpose(np.multiply(np.reshape(alphas*beta_hats*dq_da,(1,1,N)),
                                                                 np.multiply(da_dp,dp_dH)), (2,0,1))
+  print(dxdot_dH)
   dydot_dH = np.zeros([M,N,M,N])
 
   drdot_dW_p = np.zeros([N,N])
@@ -320,7 +321,7 @@ dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F,H,w_p,w_n,K_p,K_n,D_jm):
     num_steps += 1
   return x
 
-def nash_equilibrium(initial_points,max_iters,J,N,K,M,T,phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,
+def nash_equilibrium(max_iters,J,N,K,M,T,phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,
 theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,
 dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F,H,w_p,w_n,K_p,K_n,D_jm):
 
@@ -330,7 +331,7 @@ dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F,H,w_p,w_n,K_p,K_n,D_jm):
                                  K_p[i].flatten(),K_n[i].flatten(),D_jm[i].flatten()))
     strategy[i] /= np.sum(strategy[i])
 
-  tolerance = 0.03
+  tolerance = 0.005
   strategy_difference = [1]
   iterations = 0
   strategy_prev = [] # a list of the strategies at each iteration
@@ -355,6 +356,8 @@ dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F,H,w_p,w_n,K_p,K_n,D_jm):
     # compute difference in strategies
     strategy_difference.append(np.linalg.norm((strategy_prev[-2] - strategy_prev[-1])))
     iterations += 1
+
+    return F,H,w_p,w_n,K_p,K_n,D_jm,sigmas,lambdas
 
 
 
