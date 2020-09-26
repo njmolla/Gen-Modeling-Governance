@@ -42,7 +42,6 @@ dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F,H,w_p,w_n,K_p,K_n,D_jm):
   dxdot_dH = np.zeros([N,N,M,N])
   dxdot_dH[np.arange(0,N),:,:,np.arange(0,N)] = np.transpose(np.multiply(np.reshape(alphas*beta_hats*dq_da,(1,1,N)),
                                                                 np.multiply(da_dp,dp_dH)), (2,0,1))
-  print(dxdot_dH)
   dydot_dH = np.zeros([M,N,M,N])
 
   drdot_dW_p = np.zeros([N,N])
@@ -160,7 +159,7 @@ dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F,H,w_p,w_n,K_p,K_n,D_jm):
                 )
             ,axis=0)  # Sum over k
         ,axis=0)
-
+    print(grad_e_H)
     grad_e_W_p = de_dr[0,n] * dR_dW_p[l] + np.sum(np.multiply(np.reshape(de_dg[0,:,n]*dg_dy[:,n], (M,1,1)), dY_dW_p[:,l])
             + np.sum(
                 np.multiply(  # Both factors need to be kmji
