@@ -112,17 +112,17 @@ def sample(N1,N2,N3,K,M,T,C1,C2):  ## Sunshine: Maybe comment on each parameter 
     J,eigvals,stability = determine_stability(N,K,M,T, phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,
         theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,
         dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F,H,w_p,w_n,K_p,K_n,D_jm)
-    # find nash equilibrium strategies
-#    F,H,w_p,w_n,K_p,K_n,D_jm,sigmas,lambdas = nash_equilibrium(200,J,N,K,M,T,phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,
-#                     theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,
-#                     dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F,H,w_p,w_n,K_p,K_n,D_jm)
-#
-#    is_connected = True
-#    # compute Jacobian to check whether system is weakly connected
-#    J,eigvals,stability = determine_stability(N,K,M,T, phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,
-#        theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,
-#        dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F,H,w_p,w_n,K_p,K_n,D_jm)
-#
+    #H find nash equilibrium strategies
+    F,H,w_p,w_n,K_p,K_n,D_jm,sigmas,lambdas = nash_equilibrium(200,J,N,K,M,T,phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,
+                     theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,
+                     dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F,H,w_p,w_n,K_p,K_n,D_jm)
+
+    is_connected = True
+    # compute Jacobian to check whether system is weakly connected
+    J,eigvals,stability = determine_stability(N,K,M,T, phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,
+        theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,
+        dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F,H,w_p,w_n,K_p,K_n,D_jm)
+
 
     adjacency_matrix = np.zeros([T,T])
     adjacency_matrix[J!=0] = 1
