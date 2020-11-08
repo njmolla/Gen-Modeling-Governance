@@ -1,12 +1,12 @@
 import numpy as np
-from scipy import optimize  ## Sunshine: Is this abbreviation common (like np is)? You don't use sp much in the code.
+from scipy import optimize
 from compute_J import determine_stability
 from compute_J import correct_scale_params
 
 
-def objective_grad(strategy,n,l,J,N,K,M,T,phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,
-theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,
-dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm):
+def objective_grad(strategy, n, l, J, N,K,M,T,
+    phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
+    F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm):
   '''
   inputs:
     strategy for a single actor (flattened)
@@ -33,9 +33,9 @@ dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
   D_jm[l] = strategy[4*M*N+2*N+2*M:4*M*N+2*N+2*M+M**2].reshape([M,M])
 
   # Compute Jacobian
-  J, eigvals,stability = determine_stability(N,K,M,T, phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,
-      theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,
-      dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
+  J, eigvals,stability = determine_stability(N,K,M,T,
+      phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
+      F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
 
   # Compute inverse Jacobian
   J_inv = np.linalg.inv(J)
@@ -334,7 +334,7 @@ dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
 
   if beta_hats[0,n] > 0:  # Check if we are optimizing n's access
 
-    grad_a_F_p = da_dr[0,n] * dR_dF[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1,1)),dY_dF[:,l])\
+    grad_a_F_p = da_dr[0,n] * dR_dF[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1,1)),dY_dF[:,l])
           + np.sum(
               np.multiply(
                 np.reshape(np.multiply(da_dp[:,:,n],dp_dH[:,:,n]*(H_p[:,:,n]-H_n[:,:,n])),(N,M,1,1)),
@@ -344,7 +344,7 @@ dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
 
     grad_a_F_n = -grad_a_F_p
 
-    grad_a_H_p = da_dr[0,n] * dR_dH[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1,1)),dY_dH[:,l])\
+    grad_a_H_p = da_dr[0,n] * dR_dH[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1,1)),dY_dH[:,l])
           + np.sum(
               np.multiply(
                 np.reshape(np.multiply(da_dp[:,:,n],dp_dH[:,:,n]*(H_p[:,:,n]-H_n[:,:,n])),(N,M,1,1)),
@@ -356,7 +356,7 @@ dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
 
     grad_a_H_p[:,n] += np.multiply(da_dp[0,:,n],dp_dH[n,:,n])
 
-    grad_a_W_p =  da_dr[0,n]*dR_dW_p[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1,1)),dY_dW_p[:,l])\
+    grad_a_W_p =  da_dr[0,n]*dR_dW_p[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1,1)),dY_dW_p[:,l])
           + np.sum(
               np.multiply(
                 np.reshape(np.multiply(da_dp[:,:,n],dp_dH[:,:,n]*(H_p[:,:,n]-H_n[:,:,n])),(N,M,1,1)),
@@ -364,7 +364,7 @@ dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
               ),axis=0)
           ,axis=1)
 
-    grad_a_W_n = da_dr[0,n] * dR_dW_n[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1,1)),dY_dW_n[:,l])\
+    grad_a_W_n = da_dr[0,n] * dR_dW_n[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1,1)),dY_dW_n[:,l])
           + np.sum(
               np.multiply(
                 np.reshape(np.multiply(da_dp[:,:,n],dp_dH[:,:,n]*(H_p[:,:,n]-H_n[:,:,n])),(N,M,1,1)),
@@ -372,7 +372,7 @@ dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
               ),axis=0)
           ,axis=1)
 
-    grad_a_K_p = da_dr[0,n] * dR_dK_p[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1,1)),dY_dK_p[:,l])\
+    grad_a_K_p = da_dr[0,n] * dR_dK_p[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1,1)),dY_dK_p[:,l])
           + np.sum(
               np.multiply(
                 np.reshape(np.multiply(da_dp[:,:,n],dp_dH[:,:,n]*(H_p[:,:,n]-H_n[:,:,n])),(N,M,1,1)),
@@ -380,7 +380,7 @@ dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
               ),axis=0)
           ,axis=1)
 
-    grad_a_K_n =  da_dr[0,n] * dR_dK_n[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1,1)),dY_dK_n[:,l])\
+    grad_a_K_n =  da_dr[0,n] * dR_dK_n[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1,1)),dY_dK_n[:,l])
           + np.sum(
               np.multiply(
                 np.reshape(np.multiply(da_dp[:,:,n],dp_dH[:,:,n]*(H_p[:,:,n]-H_n[:,:,n])),(N,M,1,1)),
@@ -388,7 +388,7 @@ dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
               ),axis=0)
           ,axis=1)
 
-    grad_a_Djm = da_dr[0,n] * dR_dDjm[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1,1)),dY_dDjm[:,l])\
+    grad_a_Djm = da_dr[0,n] * dR_dDjm[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1,1)),dY_dDjm[:,l])
           + np.sum(
               np.multiply(
                 np.reshape(np.multiply(da_dp[:,:,n],dp_dH[:,:,n]*(H_p[:,:,n]-H_n[:,:,n])),(N,M,1,1)),
@@ -426,9 +426,9 @@ def boundary_projection(mu, strategy):
   return np.sum(np.maximum(strategy - mu, 0)) - 1
 
 
-def grad_descent_constrained(initial_point,max_steps,n,l,J,N,K,M,T,phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,
-theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,
-dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm):
+def grad_descent_constrained(initial_point, max_steps, n, l, J, N,K,M,T,
+    phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
+    F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm):
   '''
   inputs:
     initial_point is the initial strategy
@@ -442,9 +442,9 @@ dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
     strategy parameters????
   return the new and improved strategy
   '''
-  grad = objective_grad(initial_point,n,l,J,N,K,M,T,phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,
-                        theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,
-                        dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
+  grad = objective_grad(initial_point, n, l, J, N,K,M,T,
+                        phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
+                        F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
 
   # Project gradient onto the plane sum(efforts) == 1
   grad = grad - np.sum(grad)/len(grad)
@@ -467,9 +467,9 @@ dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
       x = np.maximum(x - mu, 0)
 
     # Compute new gradient and update strategy parameters to match x
-    grad = objective_grad(x,n,l,J,N,K,M,T,phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,
-                          theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,
-                          dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
+    grad = objective_grad(x, n, l, J, N,K,M,T,
+                          phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
+                          F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
 
     # Project gradient onto the plane sum(efforts) == 1
     grad = grad - np.sum(grad)/len(grad)
@@ -479,9 +479,9 @@ dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
   return x
 
 
-def nash_equilibrium(max_iters,J,N,K,M,T,phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,
-theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,
-dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm):
+def nash_equilibrium(max_iters, J, N,K,M,T,
+    phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
+    F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm):
   '''
   inputs:
     max_iters
@@ -497,8 +497,8 @@ dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
   # Initialize strategy
   strategy = np.zeros((N, 4*M*N + 2*N + 2*M+M**2))
   for i in range(N):
-    strategy[i] = np.concatenate((F_p[i].flatten(),F_n[i].flatten(),H_p[i].flatten(),H_n[i].flatten(),w_p[i].flatten(),w_n[i].flatten(),
-                                 K_p[i].flatten(),K_n[i].flatten(),D_jm[i].flatten()))
+    strategy[i] = np.concatenate((F_p[i].flatten(),F_n[i].flatten(),H_p[i].flatten(),H_n[i].flatten(),
+                                  w_p[i].flatten(),w_n[i].flatten(),K_p[i].flatten(),K_n[i].flatten(),D_jm[i].flatten()))
     strategy[i] /= np.sum(strategy[i])
 
   # sample to get bridging org objectives
@@ -513,13 +513,13 @@ dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
     # Loop through each actor i
     for i in range(N):
       if i < K:
-        new_strategy = grad_descent_constrained(strategy[i],3,i,i,J,N,K,M,T,phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,
-                                 theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,
-                                 dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
+        objective = i
       else:
-        new_strategy = grad_descent_constrained(strategy[i],3,objectives[i-K-1],i,J,N,K,M,T,phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,
-                                 theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,
-                                 dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
+        objective = objectives[i-K-1]
+
+      new_strategy = grad_descent_constrained(strategy[i], 3, objective, i, J, N,K,M,T,
+          phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
+          F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
 
       # Check if there are new zeros in the strategy parameters to see if we need to update scale parameters
       # (e.g. for portion of gain through collaboration) to make sure they are consistent with our new
@@ -541,8 +541,6 @@ dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
       print('max number of iterations')
 
   return F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm, sigmas,lambdas
-
-
 
 
 
