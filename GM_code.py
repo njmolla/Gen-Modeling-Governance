@@ -55,7 +55,7 @@ def sample(N1,N2,N3,K,M,T,C1,C2):  ## Sunshine: Maybe comment on each parameter 
           if links_per_col[i] == 0:
             continue
           else:
-            omegas[0,links[0,i],i] = np.squeeze(np.random.dirichlet(np.ones(links_per_col[i]),1))
+            omegas[0,links[0,:,i],i] = np.squeeze(np.random.dirichlet(np.ones(links_per_col[i]),1))
 
     thetas = np.random.rand(1,M)# $
     theta_bars = (1 - thetas).reshape(1,1,M) # want to be 1,1,m $
@@ -161,7 +161,47 @@ def run(N1,N2,N3,K,M,T,C1,C2,num_samples):
       theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n, \
       dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm,J
 
-if __name__ == "__main__":
+
+def main():
+  N1 = 2
+  N2 = 0
+  N3 = 0
+  K = 1
+  M = 1
+  C1 = 0.2
+  C2 = 0.2
+  T = N1 + N2 + N3 + K + M + 1 # total number of state variables
+  num_samples = 1
   PSW, total_connectance, phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas, \
       theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n, \
       dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm,J = run(N1,N2,N3,K,M,T,C1,C2,num_samples)
+  return PSW, total_connectance, phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas, \
+      theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n, \
+      dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm,J
+
+if __name__ == "__main__":
+  PSW, total_connectance, phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas, \
+      theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n, \
+      dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm,J = main()
+
+
+
+def test_calibration():
+      PSW, total_connectance, phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas, \
+          theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n, \
+          dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm,J = main()
+
+
+def test():
+      PSW, total_connectance, phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas, \
+          theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n, \
+          dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm,J = main()
+
+      for _ in range(1):
+          nash_equilibrium(1,J,N,K,M,T,phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,
+                     theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,
+                     dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
+
+
+
+

@@ -413,7 +413,7 @@ dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
                            grad_e_W_p[0], grad_e_W_n[0],
                            grad_e_K_p[0], grad_e_K_n[0],
                            grad_e_Djm.flatten()))
-  else:
+  elif beta_hats[0,n] > 0:
     # objective function gradient for accessors
     return np.concatenate((grad_a_F_p.flatten(), grad_a_F_n.flatten(),
                            grad_a_H_p.flatten(), grad_a_H_n.flatten(),
@@ -451,9 +451,9 @@ dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
   grad_mag = np.linalg.norm(grad)  # to check for convergence
 
   x = initial_point  # strategy
-  alpha = 0.01
+  alpha = 0.05
   num_steps = 0
-  while grad_mag > 1e-7 and num_steps < max_steps:
+  while grad_mag > 1e-5 and num_steps < max_steps:
     # Follow the projected gradient for a fixed step size alpha
     x = x + alpha*grad
 
@@ -501,6 +501,8 @@ dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
                                  K_p[i].flatten(),K_n[i].flatten(),D_jm[i].flatten()))
     strategy[i] /= np.sum(strategy[i])
 
+  # sample to get bridging org objectives
+  objectives = np.random.randint(0,N-K,size = K)
   tolerance = 0.01
   strategy_difference = [1]  # List of differences in euclidean distance between strategies in consecutive iterations
   iterations = 0
@@ -510,10 +512,14 @@ dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
   while strategy_difference[-1] > tolerance and iterations < max_iters:
     # Loop through each actor i
     for i in range(N):
-
-      new_strategy = grad_descent_constrained(strategy[i],3,i,i,J,N,K,M,T,phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,
-                               theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,
-                               dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
+      if i < K:
+        new_strategy = grad_descent_constrained(strategy[i],3,i,i,J,N,K,M,T,phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,
+                                 theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,
+                                 dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
+      else:
+        new_strategy = grad_descent_constrained(strategy[i],3,objectives[i-K-1],i,J,N,K,M,T,phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,
+                                 theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,
+                                 dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
 
       # Check if there are new zeros in the strategy parameters to see if we need to update scale parameters
       # (e.g. for portion of gain through collaboration) to make sure they are consistent with our new
