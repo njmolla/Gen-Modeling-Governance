@@ -14,9 +14,9 @@ def correct_scale_params(scale_params,alloc_params,i):
   return scale_params
 
 
-def determine_stability(N,K,M,T,phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,
-theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,
-dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm):
+def determine_stability(N,K,M,T,
+	phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
+	F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm):
   # compute Jacobian (vectorized)
   J = np.zeros([T,T])
   # dr•/dr
@@ -87,8 +87,8 @@ dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
       - np.squeeze(theta_bars, axis = 1)*np.sum(epsilons*dtmj_dym, axis=1))
   # compute the eigenvalues of the Jacobian
   eigvals = np.linalg.eigvals(J)
-  if all(eigvals.real) < 10e-5: # stable if real part of eigenvalues is negative
+  if all(eigvals.real) < 10e-5:  # stable if real part of eigenvalues is negative
     stability = True
   else:
-    stability = False # unstable if real part is positive, inconclusive if 0
+    stability = False  # unstable if real part is positive, inconclusive if 0
   return J,eigvals,stability
