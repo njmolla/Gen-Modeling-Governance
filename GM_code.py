@@ -3,7 +3,7 @@ import networkx as nx
 from compute_J import determine_stability
 from strategy_optimization import nash_equilibrium
 
-def sample(N1,N2,N3,K,M,T,C1,C2):
+def sample(N1,N2,N3,K,M,T, C1,C2):
   N = N1 + N2 + N3 + K
   is_connected = False
   while is_connected == False:
@@ -113,8 +113,8 @@ def sample(N1,N2,N3,K,M,T,C1,C2):
     F_n = np.random.rand(N,M,N)
     H_p = np.random.rand(N,M,N)  # effort for influencing resource access governance $
     H_n = np.random.rand(N,M,N)
-    w_p = np.random.rand(N,N)  # effort for collaboration. W_i,n is ixn $
-    w_n = np.random.rand(N,N)  # effort for undermining. W_i,n is ixn $
+    W_p = np.random.rand(N,N)  # effort for collaboration. W_i,n is ixn $
+    W_n = np.random.rand(N,N)  # effort for undermining. W_i,n is ixn $
     K_p = np.random.rand(N,M)  # effort for more influence for gov orgs $
     K_n = np.random.rand(N,M)  # effort for less influence for gov orgs $
     D_jm = np.random.rand(N,M,M)  # D_i,j,m is ixmxj effort for transferring power from each gov org to each other $
@@ -125,19 +125,19 @@ def sample(N1,N2,N3,K,M,T,C1,C2):
     # ------------------------------------------------------------------------
 
     # calculate Jacobian
-    J,eigvals,stability = determine_stability(N,K,M,T,
+    J, eigvals, stability = determine_stability(N,K,M,T,
         phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-        F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
+        F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm)
     # find nash equilibrium strategies
-    F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm, sigmas, lambdas = nash_equilibrium(1000,J,N,K,M,T,
+    F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm, sigmas, lambdas = nash_equilibrium(1000, J, N,K,M,T,
         phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-        F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
+        F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm)
 
-    is_connected = True
+    is_connected = True  #### Why is this line here? is_connected is set later
     # compute Jacobian to check whether system is weakly connected
-    J,eigvals,stability = determine_stability(N,K,M,T,
+    J, eigvals, stability = determine_stability(N,K,M,T,
         phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-        F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
+        F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm)
 
 
     adjacency_matrix = np.zeros([T,T])
@@ -147,32 +147,43 @@ def sample(N1,N2,N3,K,M,T,C1,C2):
 
   return (stability, J,
       phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-      F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
+      F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm)
 
 
-def run(N1,N2,N3,K,M,T, C1,C2, num_samples):
+def run_multiple(N1,N2,N3,K,M,T, C1,C2, num_samples):
+  '''
+  Run num_samples samples and return the proportion of webs that are stable.
+  '''
   num_stable_webs = 0
   np.random.seed(0)
   for _ in range(num_samples):
-    (stability, J,
-        phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-        F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm) = sample(N1,N2,N3,K,M,T,C1,C2)
-
-    total_connectance = (np.count_nonzero(de_dg) + np.count_nonzero(da_dp)
-        + np.count_nonzero(F_p) + np.count_nonzero(F_n) + np.count_nonzero(H_p) + np.count_nonzero(H_p)
-        + np.count_nonzero(w_p) + np.count_nonzero(w_n) + np.count_nonzero(K_p) + np.count_nonzero(K_n)
-        + np.count_nonzero(omegas) + np.count_nonzero(epsilons) + np.count_nonzero(D_jm)) \
-        /(np.size(de_dg) + np.size(da_dp) + np.size(F_p) + np.size(F_n) + np.size(H_p) + np.size(H_n)
-        + np.size(w_p) + np.size(w_n) + np.size(K_p) + np.size(K_n) + np.size(omegas)
-        + np.size(epsilons) + np.size(D_jm))
-
+    stability = sample(N1,N2,N3,K,M,T,C1,C2)[0]  # stability is the first return value
     if stability:
       num_stable_webs += 1
-  PSW = num_stable_webs/num_samples
 
-  return (PSW, total_connectance,
+  return num_stable_webs / num_samples  # proportion of stable webs
+
+
+def run_once(N1,N2,N3,K,M,T, C1,C2):
+  '''
+  Do a single run and return more detailed output.
+  '''
+  np.random.seed(0)
+  (stability, J,
+      phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
+      F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm) = sample(N1,N2,N3,K,M,T,C1,C2)
+
+  total_connectance = (np.count_nonzero(de_dg) + np.count_nonzero(da_dp)
+      + np.count_nonzero(F_p) + np.count_nonzero(F_n) + np.count_nonzero(H_p) + np.count_nonzero(H_p)
+      + np.count_nonzero(W_p) + np.count_nonzero(W_n) + np.count_nonzero(K_p) + np.count_nonzero(K_n)
+      + np.count_nonzero(omegas) + np.count_nonzero(epsilons) + np.count_nonzero(D_jm)) \
+      /(np.size(de_dg) + np.size(da_dp) + np.size(F_p) + np.size(F_n) + np.size(H_p) + np.size(H_n)
+      + np.size(W_p) + np.size(W_n) + np.size(K_p) + np.size(K_n) + np.size(omegas)
+      + np.size(epsilons) + np.size(D_jm))
+
+  return (stability, total_connectance, J
           phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-          F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm,J)
+          F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm)
 
 
 def main():
@@ -186,35 +197,44 @@ def main():
   
   # Connectance of system (for different interactions)
   C1 = 0.2  # Connectance between governance organizations and resource users.
-        # (proportion of resource extraction/access interactions influenced by governance)
+            # (proportion of resource extraction/access interactions influenced by governance)
   C2 = 0.2  # Connectance between governance organizations and other governance organizations.
 
-  num_samples = 1
-  return run(N1,N2,N3,K,M,T, C1,C2, num_samples)
+  return run_once(N1,N2,N3,K,M,T, C1,C2)
+
 
 if __name__ == "__main__":
-  (PSW, total_connectance,
+  (stability, total_connectance, J
       phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-      F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm,J) = main()
+      F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm) = main()
 
 
 
 def test_calibration():
-  (PSW, total_connectance,
+  (stability, total_connectance, J
       phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-      F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm,J) = main()
+      F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm) = main()
 
 
 def test():
-  (PSW, total_connectance,
+  (stability, total_connectance, J
       phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-      F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm,J) = main()
+      F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm) = main()
+
+  # Size of system
+  N1 = 2  # number of resource users that benefit from extraction only
+  N2 = 0  # number of users with both extractive and non-extractive use
+  N3 = 0  # number of users with only non-extractive use
+  K = 1  # number of bridging orgs
+  M = 1  # number of gov orgs
+  T = N1 + N2 + N3 + K + M + 1  # total number of state variables
+  
+  # Connectance of system (for different interactions)
+  C1 = 0.2  # Connectance between governance organizations and resource users.
+            # (proportion of resource extraction/access interactions influenced by governance)
+  C2 = 0.2  # Connectance between governance organizations and other governance organizations.
 
   for _ in range(1):
-    nash_equilibrium(1, J, N,K,M,T,
+    nash_equilibrium(1, J, N1+N2+N3+K,K,M,T,
         phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-        F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
-
-
-
-
+        F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm)

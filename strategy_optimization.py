@@ -6,7 +6,7 @@ from compute_J import correct_scale_params
 
 def objective_grad(strategy, n, l, J, N,K,M,T,
     phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-    F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm):
+    F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm):
   '''
   inputs:
     strategy for a single actor (flattened)
@@ -18,7 +18,7 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
     exponent parameters
     strategy parameters
   modified variables:
-    strategy parameters F,H,w_p,w_n,K_p,K_n,D_jm will be modified to match input strategy for l
+    strategy parameters F,H,W_p,W_n,K_p,K_n,D_jm will be modified to match input strategy for l
   return the gradient of the objective function at that point for that actor
   '''
   # Unpack strategy parameters.
@@ -26,16 +26,16 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
   F_n[l] = strategy[M*N:2*M*N].reshape([M,N])
   H_p[l] = strategy[2*M*N:3*M*N].reshape([M,N])
   H_n[l] = strategy[3*M*N:4*M*N].reshape([M,N])
-  w_p[l] = strategy[4*M*N:4*M*N+N].reshape([N])
-  w_n[l] = strategy[4*M*N+N:4*M*N+2*N].reshape([N])
+  W_p[l] = strategy[4*M*N:4*M*N+N].reshape([N])
+  W_n[l] = strategy[4*M*N+N:4*M*N+2*N].reshape([N])
   K_p[l] = strategy[4*M*N+2*N:4*M*N+2*N+M].reshape([M])
   K_n[l] = strategy[4*M*N+2*N+M:4*M*N+2*N+2*M].reshape([M])
   D_jm[l] = strategy[4*M*N+2*N+2*M:4*M*N+2*N+2*M+M**2].reshape([M,M])
 
   # Compute Jacobian
-  J, eigvals,stability = determine_stability(N,K,M,T,
+  J, eigvals, stability = determine_stability(N,K,M,T,
       phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-      F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
+      F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm)
 
   # Compute inverse Jacobian
   J_inv = np.linalg.inv(J)
@@ -55,7 +55,7 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
   drdot_dH = np.zeros([N,M,N])
   dxdot_dH = np.zeros([N,N,M,N])
   dxdot_dH[np.arange(0,N),:,:,np.arange(0,N)] = np.transpose(np.multiply(np.reshape(alphas*beta_hats*dq_da,(1,1,N)),
-                                                                np.multiply(da_dp,dp_dH)), (2,0,1))
+                                                             np.multiply(da_dp,dp_dH)), (2,0,1))
   dydot_dH = np.zeros([M,N,M,N])
 
   drdot_dW_p = np.zeros([N,N])
@@ -421,6 +421,7 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
                            grad_a_K_p[0], grad_a_K_n[0],
                            grad_a_Djm.flatten()))
 
+
 # If strategy does not have all efforts >= 0, project onto space of legal strategies
 def boundary_projection(mu, strategy):
   return np.sum(np.maximum(strategy - mu, 0)) - 1
@@ -428,7 +429,7 @@ def boundary_projection(mu, strategy):
 
 def grad_descent_constrained(initial_point, max_steps, n, l, J, N,K,M,T,
     phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-    F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm):
+    F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm):
   '''
   inputs:
     initial_point is the initial strategy
@@ -444,7 +445,7 @@ def grad_descent_constrained(initial_point, max_steps, n, l, J, N,K,M,T,
   '''
   grad = objective_grad(initial_point, n, l, J, N,K,M,T,
                         phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-                        F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
+                        F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm)
 
   # Project gradient onto the plane sum(efforts) == 1
   grad = grad - np.sum(grad)/len(grad)
@@ -469,7 +470,7 @@ def grad_descent_constrained(initial_point, max_steps, n, l, J, N,K,M,T,
     # Compute new gradient and update strategy parameters to match x
     grad = objective_grad(x, n, l, J, N,K,M,T,
                           phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-                          F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
+                          F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm)
 
     # Project gradient onto the plane sum(efforts) == 1
     grad = grad - np.sum(grad)/len(grad)
@@ -481,7 +482,7 @@ def grad_descent_constrained(initial_point, max_steps, n, l, J, N,K,M,T,
 
 def nash_equilibrium(max_iters, J, N,K,M,T,
     phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-    F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm):
+    F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm):
   '''
   inputs:
     max_iters
@@ -498,7 +499,7 @@ def nash_equilibrium(max_iters, J, N,K,M,T,
   strategy = np.zeros((N, 4*M*N + 2*N + 2*M+M**2))
   for i in range(N):
     strategy[i] = np.concatenate((F_p[i].flatten(),F_n[i].flatten(),H_p[i].flatten(),H_n[i].flatten(),
-                                  w_p[i].flatten(),w_n[i].flatten(),K_p[i].flatten(),K_n[i].flatten(),D_jm[i].flatten()))
+                                  W_p[i].flatten(),W_n[i].flatten(),K_p[i].flatten(),K_n[i].flatten(),D_jm[i].flatten()))
     strategy[i] /= np.sum(strategy[i])
 
   # sample to get bridging org objectives
@@ -519,15 +520,15 @@ def nash_equilibrium(max_iters, J, N,K,M,T,
 
       new_strategy = grad_descent_constrained(strategy[i], 3, objective, i, J, N,K,M,T,
           phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-          F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
+          F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm)
 
       # Check if there are new zeros in the strategy parameters to see if we need to update scale parameters
       # (e.g. for portion of gain through collaboration) to make sure they are consistent with our new
       # strategy parameters.
       if np.count_nonzero(new_strategy[4*M*N:4*M*N + N]) < np.count_nonzero(strategy[i][2*M*N:2*M*N+N]):
-        sigmas = correct_scale_params(sigmas,w_p[i],i)
+        sigmas = correct_scale_params(sigmas,W_p[i],i)
       if np.count_nonzero(new_strategy[4*M*N+N:4*M*N + 2*N]) < np.count_nonzero(strategy[i][2*M*N+N:2*M*N+2*N]):
-        lambdas = correct_scale_params(lambdas,w_n[i],i)
+        lambdas = correct_scale_params(lambdas,W_n[i],i)
 
       # update strategy for this actor
       strategy[i] = new_strategy
@@ -540,8 +541,6 @@ def nash_equilibrium(max_iters, J, N,K,M,T,
     if iterations == max_iters - 1:
       print('max number of iterations')
 
-  return F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm, sigmas,lambdas
-
-
+  return F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm, sigmas,lambdas
 
 
