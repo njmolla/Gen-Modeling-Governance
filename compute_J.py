@@ -1,11 +1,11 @@
 import numpy as np
 
 
-def correct_scale_params(scale_params,alloc_params,i):
+def correct_scale_params(scale_params, alloc_params, i):
   '''
   Corrects scale parameters (either sigmas or lambdas) to be consisent with optimization
-  results. Takes in scale parameters (2d) and strategy parameters for a particular actor (1d), and
-  sets scale parameters to 0 if the corresponding strategy parameters are 0, then ensures
+  results. Takes in scale parameters (2d) and strategy parameters for a particular actor i (1d),
+  and sets scale parameters to 0 if the corresponding strategy parameters are 0, then ensures
   that the scale parameters still add to 1.
   '''
   scale_params[:,i][alloc_params==0] = 0

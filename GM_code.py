@@ -128,17 +128,27 @@ def sample(N1,N2,N3,K,M,T, C1,C2):
     J, eigvals, stability = determine_stability(N,K,M,T,
         phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
         F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm)
+
+    adjacency_matrix = np.zeros([T,T])
+    adjacency_matrix[J != 0] = 1
+    graph = nx.from_numpy_array(adjacency_matrix,create_using=nx.DiGraph)
+    is_connected = nx.is_weakly_connected(graph)
+    if is_connected == False:
+      continue
+
     # find nash equilibrium strategies
     F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm, sigmas, lambdas = nash_equilibrium(1000, J, N,K,M,T,
         phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
         F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm)
 
-    is_connected = True  #### Why is this line here? is_connected is set later
-    # compute Jacobian to check whether system is weakly connected
+    # ------------------------------------------------------------------------
+    # See if system is stable and if it is weakly connected
+    # ------------------------------------------------------------------------
+
+    # check stability and use Jacobian to check whether system is weakly connected
     J, eigvals, stability = determine_stability(N,K,M,T,
         phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
         F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm)
-
 
     adjacency_matrix = np.zeros([T,T])
     adjacency_matrix[J != 0] = 1

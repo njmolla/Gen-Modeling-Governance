@@ -79,7 +79,7 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
   drdot_dH = np.zeros([N,M,N])
   dxdot_dH = np.zeros([N,N,M,N])
   dxdot_dH[np.arange(0,N),:,:,np.arange(0,N)] = np.transpose(np.multiply(np.reshape(alphas*beta_hats*dq_da,(1,1,N)),
-                                                                np.multiply(da_dp,dp_dH)), (2,0,1))
+                                                             np.multiply(da_dp,dp_dH)), (2,0,1))
   dydot_dH = np.zeros([M,N,M,N])
 
   drdot_dW_p = np.zeros([N,N])
@@ -490,7 +490,7 @@ def nash_equilibrium(max_iters, J, N,K,M,T,
     N,K,M,T meta parameters
     scale parameters
     exponent parameters
-    strategy parameters????
+    strategy parameters (initial value given by sample function)
   returns
     optimized strategy parameters
     updated sigmas and lamdas
