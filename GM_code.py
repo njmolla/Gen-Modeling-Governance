@@ -109,7 +109,7 @@ def sample(N1,N2,N3,K,M,T,C1,C2):
     # ------------------------------------------------------------------------
     # Effort allocation parameters, initial guesses
     # ------------------------------------------------------------------------
-    F_p = np.random.rand(N,M,N)  # F_i,m,n is ixmxn effort for influencing resource extraction governance $
+    F_p = np.random.rand(N,M,N)  # F_i,m,n is ixmxn positive effort for influencing resource extraction governance $
     F_n = np.random.rand(N,M,N)
     H_p = np.random.rand(N,M,N)  # effort for influencing resource access governance $
     H_n = np.random.rand(N,M,N)
@@ -133,7 +133,6 @@ def sample(N1,N2,N3,K,M,T,C1,C2):
         phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
         F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm)
 
-    is_connected = True
     # compute Jacobian to check whether system is weakly connected
     J,eigvals,stability = determine_stability(N,K,M,T,
         phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
@@ -144,6 +143,8 @@ def sample(N1,N2,N3,K,M,T,C1,C2):
     adjacency_matrix[J != 0] = 1
     graph = nx.from_numpy_array(adjacency_matrix,create_using=nx.DiGraph)
     is_connected = nx.is_weakly_connected(graph)
+    if is_connected == False:
+      print('not weakly connected')
 
   return (stability, J,
       phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
@@ -183,7 +184,7 @@ def main():
   K = 1  # number of bridging orgs
   M = 1  # number of gov orgs
   T = N1 + N2 + N3 + K + M + 1  # total number of state variables
-  
+
   # Connectance of system (for different interactions)
   C1 = 0.2  # Connectance between governance organizations and resource users.
         # (proportion of resource extraction/access interactions influenced by governance)

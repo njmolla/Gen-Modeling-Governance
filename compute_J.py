@@ -10,7 +10,7 @@ def correct_scale_params(scale_params,alloc_params,i):
   '''
   scale_params[:,i][alloc_params==0] = 0
   for i in range(sum(alloc_params==0)):
-    scale_params[alloc_params==0][i][scale_params[alloc_params==0][i] != 0]
+    scale_params[alloc_params==0][i][scale_params[alloc_params==0][i] != 0] \
         = np.squeeze(np.random.dirichlet(np.ones(len(scale_params[alloc_params==0][i][scale_params[alloc_params==0][i]!=0])),1))
   return scale_params
 
@@ -18,7 +18,7 @@ def correct_scale_params(scale_params,alloc_params,i):
 def determine_stability(N,K,M,T,
 	  phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
 	  F_p,F_n,H_p,H_n,w_p,w_n,K_p,K_n,D_jm):
-	
+
 	# --------------------------------------------------------------------------
   # Compute Jacobian (vectorized)
   # --------------------------------------------------------------------------
