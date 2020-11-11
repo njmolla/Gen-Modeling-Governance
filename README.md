@@ -89,7 +89,7 @@ sample
   called by: grad_descent_constrained  
 
 
-*nash_equilibrium*
+*nash_equilibrium*  
   .
   input: max_iters, J, N,K,M,T, params, strategy_params (initial value given by sample function)  
   output: optimized strategy parameters, updated sigmas and lamdas  
