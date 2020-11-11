@@ -3,7 +3,7 @@
 
 sample  
 &nbsp;&nbsp;samples stuff  
-&nbsp;&nbsp;strategy optimization  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;strategy optimization  
 &nbsp;&nbsp;&nbsp;&nbsp;call determine_stability to get Jacobian  
 &nbsp;&nbsp;&nbsp;&nbsp;call nash_equilibrium  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;loop until you get to equilibrium  
