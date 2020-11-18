@@ -97,8 +97,8 @@ def sample(N1,N2,N3,K,M,T, C1,C2):
     dc_dw_n = np.random.uniform(0,2,(N,N)) #dc_dw_n_i,n is ixn $
     dc_dw_n[indices,indices] = 0
     dl_dx = np.random.rand(N)
-    di_dK_p = np.zeros((N,M))#np.random.uniform(0,2,(N,M))  # $          #### document what you are doing here! Is this temporary?!
-    di_dK_n = np.zeros((N,M))#np.random.uniform(0,2,(N,M))  # $          #### document what you are doing here! Is this temporary?!
+    di_dK_p = np.random.uniform(0,2,(N,M))  # $
+    di_dK_n = np.random.uniform(0,2,(N,M))  # $
     dt_dD_jm = np.random.uniform(0,2,(N,M,M))  # dt_j->m/d(D_i,j->m * x_i) is ixmxj  $
     di_dy_p = np.random.rand(1,M)  # $
     di_dy_n = np.random.rand(1,M)  # $
@@ -200,11 +200,11 @@ def run_once(N1,N2,N3,K,M,T, C1,C2):
 
 def main():
   # Size of system
-  N1 = 2  # number of resource users that benefit from extraction only
-  N2 = 0  # number of users with both extractive and non-extractive use
+  N1 = 1  # number of resource users that benefit from extraction only
+  N2 = 2  # number of users with both extractive and non-extractive use
   N3 = 0  # number of users with only non-extractive use
-  K = 1  # number of bridging orgs
-  M = 1  # number of gov orgs
+  K = 1 # number of bridging orgs
+  M = 2  # number of gov orgs
   T = N1 + N2 + N3 + K + M + 1  # total number of state variables
 
   # Connectance of system (for different interactions)
@@ -216,20 +216,20 @@ def main():
 
 
 if __name__ == "__main__":
-  (stability, total_connectance, J
+  (stability, total_connectance, J,
       phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
       F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm) = main()
 
 
 
 def test_calibration():
-  (stability, total_connectance, J
+  (stability, total_connectance, J,
       phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
       F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm) = main()
 
 
 def test():
-  (stability, total_connectance, J
+  (stability, total_connectance, J,
       phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
       F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm) = main()
 

@@ -1,4 +1,4 @@
-from GM_code import run
+from GM_code import run_multiple
 import numpy as np
 import csv
 from mpi4py import MPI
@@ -12,16 +12,25 @@ connectance_ranges = np.linspace(0.2,0.6,10)
 PSW = np.zeros((len(size_ranges),10))
 
 size = size_ranges[comm.rank]
+np.random.seed(0)
 for j,C1 in enumerate(connectance_ranges):
-  rand = np.random.rand(size)
-  N = np.sum(rand < 0.5)
-  #K = np.sum(rand > 0.4) - np.sum(rand > 0.6)
-  K = 0
-  M = np.sum(rand > 0.5)
-  rand2 = np.random.rand(N)
-  N1 = np.sum(N < 0.33)
-  N2 = np.sum(N > 0.33) - np.sum(N > 0.66)
-  N3 = np.sum(N > 0.66)
+  # Need at least 2 resource users and one gov org
+  N = 2
+  M = 1
+  rand = np.random.rand(size-3)
+  N += np.sum(rand < 0.6)
+  K = np.sum(rand < 0.8) - np.sum(rand < 0.6)
+  M += np.sum(rand > 0.8)
+  rand2 = np.random.rand(N-1)
+  # choose at random whether guaranteed extractor is just extractor or extractor + accessor
+  rand3 = np.random.rand(1)
+  if rand3 < 0.5:
+    N1 = 1 + np.sum(rand2 < 0.33)
+    N2 = np.sum(rand2 > 0.33) - np.sum(rand2 > 0.66)
+  else:
+    N1 = np.sum(rand2 < 0.33)
+    N2 = 1 + np.sum(rand2 > 0.33) - np.sum(rand2 > 0.66)
+  N3 = np.sum(rand2 > 0.66)
   N = N1 + N2 + N3 + K # total number of resource users
   T = N + M + 1 # total number of state variables
   C2 = 0.2 # gov org-gov org connectance

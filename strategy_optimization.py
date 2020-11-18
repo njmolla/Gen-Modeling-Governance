@@ -110,8 +110,10 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
   # case for the gov org being transferred to (m=l), result is mxnxj
   dydot_dDjm[np.diag_indices(M,1),:,:,np.diag_indices(M,1)] = np.transpose(np.multiply(mus*rho_bars,np.multiply(omegas,dt_dD_jm)),(1,0,2)) # eq ___, mxnxj
   # case for the gov org transferring (m=j), result is mxnxl
-  dydot_dDjm[np.diag_indices(M,1),:,np.diag_indices(M,1),:] = np.multiply(np.transpose(-mus*np.squeeze(theta_bars)),np.transpose(np.multiply(epsilons,dt_dD_jm),(2,0,1))) # eq __, mxnxl
-
+#  print(np.shape(np.transpose(-mus*np.squeeze(theta_bars))))
+#  print(np.shape(np.transpose(np.multiply(epsilons,dt_dD_jm),(2,0,1))))
+#  print(np.shape(dydot_dDjm[np.diag_indices(M,1),:,np.diag_indices(M,1),:]))
+  dydot_dDjm[np.diag_indices(M,1),:,np.diag_indices(M,1),:] = np.multiply(np.reshape(np.transpose(-mus*np.squeeze(theta_bars)),(M,1,1)),np.transpose(np.multiply(epsilons,dt_dD_jm),(2,0,1))) # eq __, mxnxl
 
   ## Compute how the steady state of the system changes with respect to each strategy parameter
   # dSdot_dF == how steady state changes wrt F, packed into one variable
@@ -190,7 +192,7 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
   # case for the gov org being transferred to (m=l), result is mxnxj
   dydot_dDjm[np.diag_indices(M,1),:,:,np.diag_indices(M,1)] = np.transpose(np.multiply(mus*rho_bars,np.multiply(omegas,dt_dD_jm)),(1,0,2)) # eq ___, mxnxj
   # case for the gov org transferring (m=j), result is mxnxl
-  dydot_dDjm[np.diag_indices(M,1),:,np.diag_indices(M,1),:] = np.multiply(np.transpose(-mus*np.squeeze(theta_bars)),np.transpose(np.multiply(epsilons,dt_dD_jm),(2,0,1))) # eq __, mxnxl
+  dydot_dDjm[np.diag_indices(M,1),:,np.diag_indices(M,1),:] = np.multiply(np.reshape(np.transpose(-mus*np.squeeze(theta_bars)),(M,1,1)),np.transpose(np.multiply(epsilons,dt_dD_jm),(2,0,1))) # eq __, mxnxl
 
 
   ## Compute how the steady state of the system changes with respect to each strategy parameter
@@ -285,7 +287,7 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
         ,axis=0)
 
     grad_e_H_n = - grad_e_H_p
-
+    print(np.shape(dX_dW_p[:,l:l+1,:]))
     grad_e_W_p = de_dr[0,n] * dR_dW_p[l] + np.sum(np.multiply(np.reshape(de_dg[0,:,n]*dg_dy[:,n], (M,1,1)), dY_dW_p[:,l])
             + np.sum(
                 np.multiply(  # Both factors need to be kmji
@@ -362,7 +364,7 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
                 np.reshape(np.multiply(da_dp[:,:,n],dp_dH[:,:,n]*(H_p[:,:,n]-H_n[:,:,n])),(N,M,1,1)),
                 dX_dW_p[:,l:l+1,:]
               ),axis=0)
-          ,axis=1)
+          ,axis=0)
 
     grad_a_W_n = da_dr[0,n] * dR_dW_n[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1,1)),dY_dW_n[:,l])
           + np.sum(
@@ -370,7 +372,7 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
                 np.reshape(np.multiply(da_dp[:,:,n],dp_dH[:,:,n]*(H_p[:,:,n]-H_n[:,:,n])),(N,M,1,1)),
                 dX_dW_n[:,l:l+1,:]
               ),axis=0)
-          ,axis=1)
+          ,axis=0)
 
     grad_a_K_p = da_dr[0,n] * dR_dK_p[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1,1)),dY_dK_p[:,l])
           + np.sum(
@@ -378,7 +380,7 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
                 np.reshape(np.multiply(da_dp[:,:,n],dp_dH[:,:,n]*(H_p[:,:,n]-H_n[:,:,n])),(N,M,1,1)),
                 dX_dK_p[:,l:l+1,:]
               ),axis=0)
-          ,axis=1)
+          ,axis=0)
 
     grad_a_K_n =  da_dr[0,n] * dR_dK_n[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1,1)),dY_dK_n[:,l])
           + np.sum(
@@ -386,7 +388,7 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
                 np.reshape(np.multiply(da_dp[:,:,n],dp_dH[:,:,n]*(H_p[:,:,n]-H_n[:,:,n])),(N,M,1,1)),
                 dX_dK_n[:,l:l+1,:]
               ),axis=0)
-          ,axis=1)
+          ,axis=0)
 
     grad_a_Djm = da_dr[0,n] * dR_dDjm[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1,1)),dY_dDjm[:,l])
           + np.sum(
@@ -399,12 +401,13 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
 
   if betas[0,n] > 0 and beta_hats[0,n] > 0:  # Check if n is extractor and accessor
     # objective function gradient for RUs that extract and access the resource
+
     return np.concatenate(((grad_a_F_p + grad_e_F_p).flatten(),
                             (grad_a_F_n + grad_e_F_n).flatten(),
                             grad_a_H_p.flatten() + grad_e_H_p.flatten(),
                             grad_a_H_n.flatten() + grad_e_H_n.flatten(),
-                            grad_a_W_p + grad_e_W_p[0], grad_a_W_n + grad_e_W_n[0],
-                            grad_a_K_p + grad_e_K_p[0], grad_a_K_n + grad_e_K_n[0],
+                            (grad_a_W_p + grad_e_W_p).flatten(), (grad_a_W_n + grad_e_W_n).flatten(),
+                            (grad_a_K_p + grad_e_K_p).flatten(), (grad_a_K_n + grad_e_K_n).flatten(),
                             grad_a_Djm.flatten() + grad_e_Djm.flatten()))
   elif betas[0,n] > 0:
     # objective function gradient for extractors
@@ -446,7 +449,6 @@ def grad_descent_constrained(initial_point, max_steps, n, l, J, N,K,M,T,
   grad = objective_grad(initial_point, n, l, J, N,K,M,T,
                         phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
                         F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm)
-
   # Project gradient onto the plane sum(efforts) == 1
   grad = grad - np.sum(grad)/len(grad)
   grad_mag = np.linalg.norm(grad)  # to check for convergence
@@ -501,11 +503,10 @@ def nash_equilibrium(max_iters, J, N,K,M,T,
     strategy[i] = np.concatenate((F_p[i].flatten(),F_n[i].flatten(),H_p[i].flatten(),H_n[i].flatten(),
                                   W_p[i].flatten(),W_n[i].flatten(),K_p[i].flatten(),K_n[i].flatten(),D_jm[i].flatten()))
     strategy[i] /= np.sum(strategy[i])
-
   # sample to get bridging org objectives
   objectives = np.random.randint(0,N-K,size = K)
   tolerance = 0.01
-  strategy_difference = [1]  # List of differences in euclidean distance between strategies in consecutive iterations
+  strategy_difference = [1]  # arbitrary initial value, List of differences in euclidean distance between strategies in consecutive iterations
   iterations = 0
   strategy_prev = []  # a list of the strategies at each iteration
   strategy_prev.append(strategy.copy())
@@ -513,15 +514,15 @@ def nash_equilibrium(max_iters, J, N,K,M,T,
   while strategy_difference[-1] > tolerance and iterations < max_iters:
     # Loop through each actor i
     for i in range(N):
-      if i < K:
+      if i <= N-K-1:
         objective = i
       else:
-        objective = objectives[i-K-1]
+        objective = objectives[i-(N-K)]
+
 
       new_strategy = grad_descent_constrained(strategy[i], 3, objective, i, J, N,K,M,T,
           phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
           F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm)
-
       # Check if there are new zeros in the strategy parameters to see if we need to update scale parameters
       # (e.g. for portion of gain through collaboration) to make sure they are consistent with our new
       # strategy parameters.
