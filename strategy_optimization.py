@@ -287,11 +287,12 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
         ,axis=0)
 
     grad_e_H_n = - grad_e_H_p
-    print(np.shape(dX_dW_p[:,l:l+1,:]))
+#    print(np.shape(dX_dH[:,l:l+1,:,:]))
+#    print(np.shape(dX_dW_p[:,l:l+1,:]))
     grad_e_W_p = de_dr[0,n] * dR_dW_p[l] + np.sum(np.multiply(np.reshape(de_dg[0,:,n]*dg_dy[:,n], (M,1,1)), dY_dW_p[:,l])
             + np.sum(
                 np.multiply(  # Both factors need to be kmji
-                    np.reshape(np.multiply(de_dg[:,:,n],dg_dF[:,:,n]*(F_p[:,:,n]-F_n[:,:,n])), (N,M,1,1)),
+                    np.reshape(np.multiply(de_dg[:,:,n],dg_dF[:,:,n]*(F_p[:,:,n]-F_n[:,:,n])), (N,M,1)),
                     dX_dW_p[:,l:l+1,:]
                 )
             ,axis=0)  # Sum over k
