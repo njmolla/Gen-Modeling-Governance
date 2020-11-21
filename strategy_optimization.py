@@ -2,7 +2,8 @@ import numpy as np
 from scipy import optimize
 from compute_J import determine_stability
 from compute_J import correct_scale_params
-
+import matplotlib.pyplot as plt
+import csv
 
 def objective_grad(strategy, n, l, J, N,K,M,T,
     phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
@@ -287,9 +288,8 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
         ,axis=0)
 
     grad_e_H_n = - grad_e_H_p
-#    print(np.shape(dX_dH[:,l:l+1,:,:]))
-#    print(np.shape(dX_dW_p[:,l:l+1,:]))
-    grad_e_W_p = de_dr[0,n] * dR_dW_p[l] + np.sum(np.multiply(np.reshape(de_dg[0,:,n]*dg_dy[:,n], (M,1,1)), dY_dW_p[:,l])
+
+    grad_e_W_p = de_dr[0,n] * dR_dW_p[l] + np.sum(np.multiply(np.reshape(de_dg[0,:,n]*dg_dy[:,n], (M,1)), dY_dW_p[:,l])
             + np.sum(
                 np.multiply(  # Both factors need to be kmi
                     np.reshape(
@@ -302,29 +302,28 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
                 )
             ,axis=0)  # Sum over k
         ,axis=0)
-
-    grad_e_W_n =  de_dr[0,n] * dR_dW_n[l] + np.sum(np.multiply(np.reshape(de_dg[0,:,n]*dg_dy[:,n], (M,1,1)), dY_dW_n[:,l])
+    grad_e_W_n =  de_dr[0,n] * dR_dW_n[l] + np.sum(np.multiply(np.reshape(de_dg[0,:,n]*dg_dy[:,n], (M,1)), dY_dW_n[:,l])
             + np.sum(
                 np.multiply(  # Both factors need to be kmji
-                    np.reshape(np.multiply(de_dg[:,:,n],dg_dF[:,:,n]*(F_p[:,:,n]-F_n[:,:,n])), (N,M,1,1)),
+                    np.reshape(np.multiply(de_dg[:,:,n],dg_dF[:,:,n]*(F_p[:,:,n]-F_n[:,:,n])), (N,M,1)),
                     dX_dW_n[:,l:l+1,:]
                 )
             ,axis=0)  # Sum over k
         ,axis=0)
 
-    grad_e_K_p =  de_dr[0,n] * dR_dK_p[l] + np.sum(np.multiply(np.reshape(de_dg[0,:,n]*dg_dy[:,n], (M,1,1)), dY_dK_p[:,l])
+    grad_e_K_p =  de_dr[0,n] * dR_dK_p[l] + np.sum(np.multiply(np.reshape(de_dg[0,:,n]*dg_dy[:,n], (M,1)), dY_dK_p[:,l])
             + np.sum(
                 np.multiply(  # Both factors need to be kmji
-                    np.reshape(np.multiply(de_dg[:,:,n],dg_dF[:,:,n]*(F_p[:,:,n]-F_n[:,:,n])), (N,M,1,1)),
+                    np.reshape(np.multiply(de_dg[:,:,n],dg_dF[:,:,n]*(F_p[:,:,n]-F_n[:,:,n])), (N,M,1)),
                     dX_dK_p[:,l:l+1,:]
                 )
             ,axis=0)  # Sum over k
         ,axis=0)
 
-    grad_e_K_n = de_dr[0,n] * dR_dK_n[l] + np.sum(np.multiply(np.reshape(de_dg[0,:,n]*dg_dy[:,n], (M,1,1)), dY_dK_n[:,l])
+    grad_e_K_n = de_dr[0,n] * dR_dK_n[l] + np.sum(np.multiply(np.reshape(de_dg[0,:,n]*dg_dy[:,n], (M,1)), dY_dK_n[:,l])
             + np.sum(
                 np.multiply(  # Both factors need to be kmji
-                    np.reshape(np.multiply(de_dg[:,:,n],dg_dF[:,:,n]*(F_p[:,:,n]-F_n[:,:,n])), (N,M,1,1)),
+                    np.reshape(np.multiply(de_dg[:,:,n],dg_dF[:,:,n]*(F_p[:,:,n]-F_n[:,:,n])), (N,M,1)),
                     dX_dK_n[:,l:l+1,:]
                 )
             ,axis=0)  # Sum over k
@@ -348,7 +347,7 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
                 np.reshape(np.multiply(da_dp[:,:,n],dp_dH[:,:,n]*(H_p[:,:,n]-H_n[:,:,n])),(N,M,1,1)),
                 dX_dF[:,l:l+1,:,:]
               ),axis=0)
-          ,axis=1)
+          ,axis=0)
 
     grad_a_F_n = -grad_a_F_p
 
@@ -358,40 +357,39 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
                 np.reshape(np.multiply(da_dp[:,:,n],dp_dH[:,:,n]*(H_p[:,:,n]-H_n[:,:,n])),(N,M,1,1)),
                 dX_dH[:,l:l+1,:,:]
               ),axis=0)
-          ,axis=1)
+          ,axis=0)
 
     grad_a_H_n = -grad_a_H_p
 
     grad_a_H_p[:,n] += np.multiply(da_dp[0,:,n],dp_dH[n,:,n])
 
-    grad_a_W_p =  da_dr[0,n]*dR_dW_p[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1,1)),dY_dW_p[:,l])
+    grad_a_W_p =  da_dr[0,n]*dR_dW_p[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1)),dY_dW_p[:,l])
           + np.sum(
               np.multiply(
-                np.reshape(np.multiply(da_dp[:,:,n],dp_dH[:,:,n]*(H_p[:,:,n]-H_n[:,:,n])),(N,M,1,1)),
+                np.reshape(np.multiply(da_dp[:,:,n],dp_dH[:,:,n]*(H_p[:,:,n]-H_n[:,:,n])),(N,M,1)),
                 dX_dW_p[:,l:l+1,:]
               ),axis=0)
           ,axis=0)
-
-    grad_a_W_n = da_dr[0,n] * dR_dW_n[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1,1)),dY_dW_n[:,l])
+    grad_a_W_n = da_dr[0,n] * dR_dW_n[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1)),dY_dW_n[:,l])
           + np.sum(
               np.multiply(
-                np.reshape(np.multiply(da_dp[:,:,n],dp_dH[:,:,n]*(H_p[:,:,n]-H_n[:,:,n])),(N,M,1,1)),
+                np.reshape(np.multiply(da_dp[:,:,n],dp_dH[:,:,n]*(H_p[:,:,n]-H_n[:,:,n])),(N,M,1)),
                 dX_dW_n[:,l:l+1,:]
               ),axis=0)
           ,axis=0)
 
-    grad_a_K_p = da_dr[0,n] * dR_dK_p[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1,1)),dY_dK_p[:,l])
+    grad_a_K_p = da_dr[0,n] * dR_dK_p[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1)),dY_dK_p[:,l])
           + np.sum(
               np.multiply(
-                np.reshape(np.multiply(da_dp[:,:,n],dp_dH[:,:,n]*(H_p[:,:,n]-H_n[:,:,n])),(N,M,1,1)),
+                np.reshape(np.multiply(da_dp[:,:,n],dp_dH[:,:,n]*(H_p[:,:,n]-H_n[:,:,n])),(N,M,1)),
                 dX_dK_p[:,l:l+1,:]
               ),axis=0)
           ,axis=0)
 
-    grad_a_K_n =  da_dr[0,n] * dR_dK_n[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1,1)),dY_dK_n[:,l])
+    grad_a_K_n =  da_dr[0,n] * dR_dK_n[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1)),dY_dK_n[:,l])
           + np.sum(
               np.multiply(
-                np.reshape(np.multiply(da_dp[:,:,n],dp_dH[:,:,n]*(H_p[:,:,n]-H_n[:,:,n])),(N,M,1,1)),
+                np.reshape(np.multiply(da_dp[:,:,n],dp_dH[:,:,n]*(H_p[:,:,n]-H_n[:,:,n])),(N,M,1)),
                 dX_dK_n[:,l:l+1,:]
               ),axis=0)
           ,axis=0)
@@ -402,12 +400,11 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
                 np.reshape(np.multiply(da_dp[:,:,n],dp_dH[:,:,n]*(H_p[:,:,n]-H_n[:,:,n])),(N,M,1,1)),
                 dX_dDjm[:,l:l+1,:,:]
               ),axis=0)
-          ,axis=1)
+          ,axis=0)
 
 
   if betas[0,n] > 0 and beta_hats[0,n] > 0:  # Check if n is extractor and accessor
     # objective function gradient for RUs that extract and access the resource
-
     return np.concatenate(((grad_a_F_p + grad_e_F_p).flatten(),
                             (grad_a_F_n + grad_e_F_n).flatten(),
                             grad_a_H_p.flatten() + grad_e_H_p.flatten(),
@@ -419,15 +416,15 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
     # objective function gradient for extractors
     return np.concatenate((grad_e_F_p.flatten(), grad_e_F_n.flatten(),
                            grad_e_H_p.flatten(), grad_e_H_n.flatten(),
-                           grad_e_W_p[0], grad_e_W_n[0],
-                           grad_e_K_p[0], grad_e_K_n[0],
+                           grad_e_W_p, grad_e_W_n,
+                           grad_e_K_p, grad_e_K_n,
                            grad_e_Djm.flatten()))
   elif beta_hats[0,n] > 0:
     # objective function gradient for accessors
     return np.concatenate((grad_a_F_p.flatten(), grad_a_F_n.flatten(),
                            grad_a_H_p.flatten(), grad_a_H_n.flatten(),
-                           grad_a_W_p[0], grad_a_W_n[0],
-                           grad_a_K_p[0], grad_a_K_n[0],
+                           grad_a_W_p, grad_a_W_n,
+                           grad_a_K_p, grad_a_K_n,
                            grad_a_Djm.flatten()))
 
 
@@ -460,19 +457,23 @@ def grad_descent_constrained(initial_point, max_steps, n, l, J, N,K,M,T,
   grad_mag = np.linalg.norm(grad)  # to check for convergence
 
   x = initial_point  # strategy
-  alpha = 0.05
+  alpha = 0.005 # had this 0.05
   num_steps = 0
   while grad_mag > 1e-5 and num_steps < max_steps:
     # Follow the projected gradient for a fixed step size alpha
     x = x + alpha*grad
-
     # If strategy does not have all efforts >= 0, project onto space of legal strategies
     if np.any(x < 0):
       try:
-        mu = optimize.brentq(boundary_projection, 0, 500, args=(x))
+        ub = np.sum(x[x>0])
+        mu = optimize.brentq(boundary_projection, 0, ub, args=(x))
       except:
         print('bisection bounds did not work')
-        print(x)
+        mus = np.arange(0,ub,50)
+        y = np.zeros(len(mus))
+        for i, mu in enumerate(mus):
+          y[i] = boundary_projection(mu,x)
+        plt.plot(mus,y)
       x = np.maximum(x - mu, 0)
 
     # Compute new gradient and update strategy parameters to match x
@@ -485,6 +486,8 @@ def grad_descent_constrained(initial_point, max_steps, n, l, J, N,K,M,T,
     grad_mag = np.linalg.norm(grad)  # to check for convergence
 
     num_steps += 1
+    if grad_mag < 1e-5:
+      print('gradient descent convergence reached')
   return x
 
 
@@ -504,18 +507,19 @@ def nash_equilibrium(max_iters, J, N,K,M,T,
     updated sigmas and lamdas
   '''
   # Initialize strategy
-  strategy = np.zeros((N, 4*M*N + 2*N + 2*M+M**2))
+  strategy = np.zeros((N, 4*M*N + 2*N + 2*M + M**2))
   for i in range(N):
     strategy[i] = np.concatenate((F_p[i].flatten(),F_n[i].flatten(),H_p[i].flatten(),H_n[i].flatten(),
                                   W_p[i].flatten(),W_n[i].flatten(),K_p[i].flatten(),K_n[i].flatten(),D_jm[i].flatten()))
     strategy[i] /= np.sum(strategy[i])
   # sample to get bridging org objectives
   objectives = np.random.randint(0,N-K,size = K)
-  tolerance = 0.01
+  tolerance = 0.001 # was 0.01##################################################################################################################################################
   strategy_difference = [1]  # arbitrary initial value, List of differences in euclidean distance between strategies in consecutive iterations
   iterations = 0
   strategy_prev = []  # a list of the strategies at each iteration
   strategy_prev.append(strategy.copy())
+  diff_with_eq = []
 
   while strategy_difference[-1] > tolerance and iterations < max_iters:
     # Loop through each actor i
@@ -526,7 +530,7 @@ def nash_equilibrium(max_iters, J, N,K,M,T,
         objective = objectives[i-(N-K)]
 
 
-      new_strategy = grad_descent_constrained(strategy[i], 3, objective, i, J, N,K,M,T,
+      new_strategy = grad_descent_constrained(strategy[i], 1, objective, i, J, N,K,M,T,
           phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
           F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm)
       # Check if there are new zeros in the strategy parameters to see if we need to update scale parameters
@@ -547,7 +551,12 @@ def nash_equilibrium(max_iters, J, N,K,M,T,
     iterations += 1
     if iterations == max_iters - 1:
       print('max number of iterations')
-
+  for i in range(len(strategy_prev)):
+      diff_with_eq.append(np.linalg.norm(strategy_prev[i] - strategy_prev[-1]))
+  with open('strategy_difference_1actor.csv', 'w+') as f:
+    csvwriter = csv.writer(f)
+    csvwriter.writerow(strategy_difference)
+    csvwriter.writerow(diff_with_eq)
   return F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm, sigmas,lambdas
 
 

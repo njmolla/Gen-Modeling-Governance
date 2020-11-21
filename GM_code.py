@@ -80,14 +80,14 @@ def sample(N1,N2,N3,K,M,T, C1,C2):
     while np.count_nonzero(links) == 0:
       links = np.random.rand(N1+N2) < C1
     de_dg[:,:,0:N1+N2][:,:,links] = np.random.uniform(-1,1,(1,M,sum(links)))
-    dg_dF = np.random.uniform(0,2,(N,M,N))  # dg_m,n/(dF_i,m,n * x_i) is ixmxn $
+    dg_dF = np.ones((N,M,N)) #np.random.uniform(0,2,(N,M,N))  # dg_m,n/(dF_i,m,n * x_i) is ixmxn $###############
                                             # should be positive!
     dg_dy = np.random.rand(M,N)*2 # $
     dp_dy = np.random.rand(M,N)*2 # $
     db_de = np.random.rand(1,N)*2 # $
     da_dr = np.random.rand(1,N)*2 # $
     dq_da = np.random.uniform(-2,2,(1,N)) # $
-    da_dp = np.zeros((1,M,N)) # $
+    da_dp = np.random.uniform(-1,1,((1,M,N)))
     links = np.random.rand(N2+N3) < C1
     da_dp[:,:,N1:N-K][:,:,links] = np.random.uniform(-1,1,(1,M,sum(links)))
     dp_dH = np.random.uniform(0,2,(N,M,N)) # dp_m,n/(dH_i,m,n * x_i) is ixmxn $
@@ -97,13 +97,13 @@ def sample(N1,N2,N3,K,M,T, C1,C2):
     dc_dw_n = np.random.uniform(0,2,(N,N)) #dc_dw_n_i,n is ixn $
     dc_dw_n[indices,indices] = 0
     dl_dx = np.random.rand(N)
-    di_dK_p = np.random.uniform(0,2,(N,M))  # $
-    di_dK_n = np.random.uniform(0,2,(N,M))  # $
+    di_dK_p = 0#np.random.uniform(0,2,(N,M))  # $ temporary ###################
+    di_dK_n = 0#np.random.uniform(0,2,(N,M))  # $ temporary ###################
+    di_dy_p = np.zeros(1,M)# np.random.rand(1,M)  # $
+    di_dy_n = np.zeros(1,M) # np.random.rand(1,M)  # $
     dt_dD_jm = np.random.uniform(0,2,(N,M,M))  # dt_j->m/d(D_i,j->m * x_i) is ixmxj  $
-    di_dy_p = np.random.rand(1,M)  # $
-    di_dy_n = np.random.rand(1,M)  # $
-    dtjm_dym = np.random.rand(M,M)  # 1xmxj
-    dtmj_dym = np.random.uniform(-1,0,(1,M,M))  # 1xjxm
+    dtjm_dym = np.zeros(M,M)# was np.random.rand(M,M)  # 1xmxj
+    dtmj_dym = np.zeros(M,M) #was np.random.uniform(-1,0,(1,M,M))  # 1xjxm
 
 
     # ------------------------------------------------------------------------
@@ -128,7 +128,6 @@ def sample(N1,N2,N3,K,M,T, C1,C2):
     J, eigvals, stability = determine_stability(N,K,M,T,
         phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
         F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm)
-
     adjacency_matrix = np.zeros([T,T])
     adjacency_matrix[J != 0] = 1
     graph = nx.from_numpy_array(adjacency_matrix,create_using=nx.DiGraph)
@@ -137,7 +136,7 @@ def sample(N1,N2,N3,K,M,T, C1,C2):
       continue
 
     # find nash equilibrium strategies
-    F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm, sigmas, lambdas = nash_equilibrium(1000, J, N,K,M,T,
+    F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm, sigmas, lambdas = nash_equilibrium(2000, J, N,K,M,T,
         phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
         F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm)
 
@@ -149,6 +148,7 @@ def sample(N1,N2,N3,K,M,T, C1,C2):
     J, eigvals, stability = determine_stability(N,K,M,T,
         phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
         F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm)
+    print(eigvals.real)
 
     adjacency_matrix = np.zeros([T,T])
     adjacency_matrix[J != 0] = 1
@@ -167,7 +167,6 @@ def run_multiple(N1,N2,N3,K,M,T, C1,C2, num_samples):
   Run num_samples samples and return the proportion of webs that are stable.
   '''
   num_stable_webs = 0
-  np.random.seed(0)
   for _ in range(num_samples):
     stability = sample(N1,N2,N3,K,M,T,C1,C2)[0]  # stability is the first return value
     if stability:
@@ -201,10 +200,10 @@ def run_once(N1,N2,N3,K,M,T, C1,C2):
 def main():
   # Size of system
   N1 = 1  # number of resource users that benefit from extraction only
-  N2 = 2  # number of users with both extractive and non-extractive use
+  N2 = 0 # number of users with both extractive and non-extractive use
   N3 = 0  # number of users with only non-extractive use
-  K = 1 # number of bridging orgs
-  M = 2  # number of gov orgs
+  K = 0 # number of bridging orgs
+  M = 1  # number of gov orgs
   T = N1 + N2 + N3 + K + M + 1  # total number of state variables
 
   # Connectance of system (for different interactions)

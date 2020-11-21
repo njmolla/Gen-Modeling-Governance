@@ -3,8 +3,8 @@ import numpy as np
 import csv
 
 
-size_ranges = np.arange(5,15,1)
-connectance_ranges = np.linspace(0.2,0.6,10)
+size_ranges = np.arange(5,7,1)
+connectance_ranges = np.linspace(0.2,0.6,2)
 PSW = np.zeros((len(size_ranges),10))
 
 np.random.seed(0)

@@ -9,8 +9,8 @@ num_processors = 10
 
 size_ranges = np.arange(5,15,1)
 connectance_ranges = np.linspace(0.2,0.6,10)
-PSW = np.zeros((len(size_ranges),10))
-
+PSW = np.ones((len(size_ranges),10))*-100
+num_samples = 10
 size = size_ranges[comm.rank]
 np.random.seed(0)
 for j,C1 in enumerate(connectance_ranges):
@@ -34,7 +34,8 @@ for j,C1 in enumerate(connectance_ranges):
   N = N1 + N2 + N3 + K # total number of resource users
   T = N + M + 1 # total number of state variables
   C2 = 0.2 # gov org-gov org connectance
-  PSW[comm.rank,j] = run_multiple(N1,N2,N3,K,M,T,C1,C2,1)
+  print((N1,N2,N3,K,M))
+  PSW[comm.rank,j] = run_multiple(N1,N2,N3,K,M,T,C1,C2,num_samples)
 
   with open('PSW.csv', 'w+') as f:
     csvwriter = csv.writer(f)
