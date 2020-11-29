@@ -1,0 +1,9 @@
+Issue log:
+
+ - broadcasting error with M>1
+   - change N,M,1,1 to N,M,1
+ - mismatch in strategy length
+   - change M,1,1 to M,1 to match previous change
+ - ValueError: all the input arrays must have same number of dimensions, but the array at index 0 has 1 dimension(s) and the array at index 4 has 0 dimension(s)
+   - Need to output grad_e_W_p and similar instead of grad_e_W_p[0] now that they have reduced dimension due to previous changes
+ - UnboundLocalError: local variable 'mu' referenced before assignment

@@ -33,6 +33,7 @@ for i, size in enumerate(size_ranges):
     C2 = 0.2 # gov org-gov org connectance
     print((N1,N2,N3,K,M))
     PSW[i,j] = run_multiple(N1,N2,N3,K,M,T,C1,C2,1)
+    print(PSW)
 
     with open('PSW.csv', 'w+') as f:
       csvwriter = csv.writer(f)

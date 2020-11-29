@@ -89,7 +89,7 @@ def determine_stability(N,K,M,T,
 
   # dy•/dy for m = j
   indices = np.arange(N+1,T)  # Access the diagonal of the governing agency part.
-  J[indices,indices] = np.squeeze(mus*rhos*di_dy_p - thetas*di_dy_n
+  J[indices,indices] = np.squeeze(mus)*np.squeeze(rhos*di_dy_p - thetas*di_dy_n
         + np.squeeze(rho_bars, axis = 2)*np.sum(omegas*dtjm_dym, axis = 2)
         - np.squeeze(theta_bars, axis = 1)*np.sum(epsilons*dtmj_dym, axis=1)
       )
@@ -99,7 +99,7 @@ def determine_stability(N,K,M,T,
   # Compute the eigenvalues of the Jacobian
   # --------------------------------------------------------------------------
   eigvals = np.linalg.eigvals(J)
-  if all(eigvals.real) < 10e-5:  # stable if real part of eigenvalues is negative
+  if all(eigvals.real < 10e-5):  # stable if real part of eigenvalues is negative
     stability = True
   else:
     stability = False  # unstable if real part is positive, inconclusive if 0

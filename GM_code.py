@@ -43,7 +43,7 @@ def sample(N1,N2,N3,K,M,T, C1,C2):
 
     mus = np.random.rand(1,M) # $
 
-    rhos = np.random.rand(1,M) # $
+    rhos = np.random.rand(1,M) # $ should be 1 for M=1 based on rho_bar
     rho_bars = np.reshape(1 - rhos,(1,M,1)) # want to be 1,m,1$
 
     omegas = np.zeros([1,M,M]) # omegas_m,j is 1xjxm, want to sum to 1 along m
@@ -97,13 +97,13 @@ def sample(N1,N2,N3,K,M,T, C1,C2):
     dc_dw_n = np.random.uniform(0,2,(N,N)) #dc_dw_n_i,n is ixn $
     dc_dw_n[indices,indices] = 0
     dl_dx = np.random.rand(N)
-    di_dK_p = 0#np.random.uniform(0,2,(N,M))  # $ temporary ###################
-    di_dK_n = 0#np.random.uniform(0,2,(N,M))  # $ temporary ###################
-    di_dy_p = np.zeros(1,M)# np.random.rand(1,M)  # $
-    di_dy_n = np.zeros(1,M) # np.random.rand(1,M)  # $
+    di_dK_p = np.random.uniform(0,2,(N,M))
+    di_dK_n = np.random.uniform(0,2,(N,M))
+    di_dy_p = np.random.rand(1,M)  # $
+    di_dy_n = np.random.rand(1,M)  # $
     dt_dD_jm = np.random.uniform(0,2,(N,M,M))  # dt_j->m/d(D_i,j->m * x_i) is ixmxj  $
-    dtjm_dym = np.zeros(M,M)# was np.random.rand(M,M)  # 1xmxj
-    dtmj_dym = np.zeros(M,M) #was np.random.uniform(-1,0,(1,M,M))  # 1xjxm
+    dtjm_dym = np.random.rand(M,M)  # 1xmxj
+    dtmj_dym = np.random.uniform(-1,0,(1,M,M))  # 1xjxm
 
 
     # ------------------------------------------------------------------------
@@ -169,6 +169,7 @@ def run_multiple(N1,N2,N3,K,M,T, C1,C2, num_samples):
   num_stable_webs = 0
   for _ in range(num_samples):
     stability = sample(N1,N2,N3,K,M,T,C1,C2)[0]  # stability is the first return value
+    print(stability)
     if stability:
       num_stable_webs += 1
 

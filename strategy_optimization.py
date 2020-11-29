@@ -457,7 +457,7 @@ def grad_descent_constrained(initial_point, max_steps, n, l, J, N,K,M,T,
   grad_mag = np.linalg.norm(grad)  # to check for convergence
 
   x = initial_point  # strategy
-  alpha = 0.005 # had this 0.05
+  alpha = 0.05 # had this 0.05
   num_steps = 0
   while grad_mag > 1e-5 and num_steps < max_steps:
     # Follow the projected gradient for a fixed step size alpha
@@ -514,7 +514,7 @@ def nash_equilibrium(max_iters, J, N,K,M,T,
     strategy[i] /= np.sum(strategy[i])
   # sample to get bridging org objectives
   objectives = np.random.randint(0,N-K,size = K)
-  tolerance = 0.001 # was 0.01##################################################################################################################################################
+  tolerance = 0.01 # was 0.01##################################################################################################################################################
   strategy_difference = [1]  # arbitrary initial value, List of differences in euclidean distance between strategies in consecutive iterations
   iterations = 0
   strategy_prev = []  # a list of the strategies at each iteration
@@ -553,10 +553,11 @@ def nash_equilibrium(max_iters, J, N,K,M,T,
       print('max number of iterations')
   for i in range(len(strategy_prev)):
       diff_with_eq.append(np.linalg.norm(strategy_prev[i] - strategy_prev[-1]))
-  with open('strategy_difference_1actor.csv', 'w+') as f:
+  with open('strategies_1actor.csv', 'w+') as f:
     csvwriter = csv.writer(f)
-    csvwriter.writerow(strategy_difference)
-    csvwriter.writerow(diff_with_eq)
+    csvwriter.writerows(strategy_prev)
+#    csvwriter.writerow(strategy_difference)
+#    csvwriter.writerow(diff_with_eq)
   return F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm, sigmas,lambdas
 
 
