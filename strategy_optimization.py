@@ -2,8 +2,8 @@ import numpy as np
 from scipy import optimize
 from compute_J import determine_stability
 from compute_J import correct_scale_params
-import matplotlib.pyplot as plt
 import csv
+from numba import jit
 
 def objective_grad(strategy, n, l, J, N,K,M,T,
     phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
@@ -449,15 +449,21 @@ def grad_descent_constrained(initial_point, max_steps, n, l, J, N,K,M,T,
     strategy parameters????
   return the new and improved strategy
   '''
+  raw_grad = []
+  projected_grad = []
+  strategies = []
   grad = objective_grad(initial_point, n, l, J, N,K,M,T,
                         phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
                         F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm)
+  raw_grad.append(grad)
   # Project gradient onto the plane sum(efforts) == 1
   grad = grad - np.sum(grad)/len(grad)
+  projected_grad.append(grad)
   grad_mag = np.linalg.norm(grad)  # to check for convergence
 
   x = initial_point  # strategy
-  alpha = 0.05 # had this 0.05
+  strategies.append(x)
+  alpha = 0.05
   num_steps = 0
   while grad_mag > 1e-5 and num_steps < max_steps:
     # Follow the projected gradient for a fixed step size alpha
@@ -469,26 +475,25 @@ def grad_descent_constrained(initial_point, max_steps, n, l, J, N,K,M,T,
         mu = optimize.brentq(boundary_projection, 0, ub, args=(x))
       except:
         print('bisection bounds did not work')
-        mus = np.arange(0,ub,50)
-        y = np.zeros(len(mus))
-        for i, mu in enumerate(mus):
-          y[i] = boundary_projection(mu,x)
-        plt.plot(mus,y)
+        raise Exception('bisection bounds did not work')
       x = np.maximum(x - mu, 0)
-
+    strategies.append(x)
     # Compute new gradient and update strategy parameters to match x
     grad = objective_grad(x, n, l, J, N,K,M,T,
                           phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
                           F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm)
+    raw_grad.append(grad)
 
     # Project gradient onto the plane sum(efforts) == 1
     grad = grad - np.sum(grad)/len(grad)
+    projected_grad.append(grad)
+
     grad_mag = np.linalg.norm(grad)  # to check for convergence
 
     num_steps += 1
     if grad_mag < 1e-5:
       print('gradient descent convergence reached')
-  return x
+  return x, raw_grad, projected_grad, strategies
 
 
 def nash_equilibrium(max_iters, J, N,K,M,T,
@@ -514,13 +519,13 @@ def nash_equilibrium(max_iters, J, N,K,M,T,
     strategy[i] /= np.sum(strategy[i])
   # sample to get bridging org objectives
   objectives = np.random.randint(0,N-K,size = K)
-  tolerance = 0.01 # was 0.01##################################################################################################################################################
+  tolerance = 0.01 #
   strategy_difference = [1]  # arbitrary initial value, List of differences in euclidean distance between strategies in consecutive iterations
   iterations = 0
   strategy_prev = []  # a list of the strategies at each iteration
   strategy_prev.append(strategy.copy())
   diff_with_eq = []
-
+  converged = True
   while strategy_difference[-1] > tolerance and iterations < max_iters:
     # Loop through each actor i
     for i in range(N):
@@ -550,14 +555,14 @@ def nash_equilibrium(max_iters, J, N,K,M,T,
     strategy_difference.append(np.linalg.norm((strategy_prev[-2] - strategy_prev[-1])))
     iterations += 1
     if iterations == max_iters - 1:
-      print('max number of iterations')
+      converged = False
   for i in range(len(strategy_prev)):
       diff_with_eq.append(np.linalg.norm(strategy_prev[i] - strategy_prev[-1]))
   with open('strategies_1actor.csv', 'w+') as f:
     csvwriter = csv.writer(f)
-    csvwriter.writerows(strategy_prev)
+    csvwriter.writerows(np.array(strategy_prev))
 #    csvwriter.writerow(strategy_difference)
 #    csvwriter.writerow(diff_with_eq)
-  return F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm, sigmas,lambdas
+  return F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm, sigmas,lambdas, converged
 
 

@@ -7,3 +7,20 @@ Issue log:
  - ValueError: all the input arrays must have same number of dimensions, but the array at index 0 has 1 dimension(s) and the array at index 4 has 0 dimension(s)
    - Need to output grad_e_W_p and similar instead of grad_e_W_p[0] now that they have reduced dimension due to previous changes
  - UnboundLocalError: local variable 'mu' referenced before assignment
+   - was an issue with the optimization, though may also be because of failure to import scipy package
+
+Debuggging strategy optimization:
+
+Original case:
+Seed = 0, set dg_dF = 1
+Dg_dF = 1
+De_dg = -0.8257414
+Cycled between F+ and F-. Should be F-.
+
+Case 2:
+Seed = 0, dg_dF random
+Dg_dF = 0.04
+De_dg = -0.8257414
+di_dK_p = 1.88933783
+di_dK_n = 1.04369664
+Cycles between K+ and K- (perhaps because exponent parameters are similar). Should be K-.

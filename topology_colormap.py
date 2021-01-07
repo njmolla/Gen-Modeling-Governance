@@ -2,42 +2,31 @@ from GM_code import run_multiple
 import numpy as np
 import csv
 from mpi4py import MPI
+import sys
 
 comm = MPI.COMM_WORLD
 
-num_processors = 10
+num_processors = 100
+
+if comm.size != num_processors:
+  print('ERROR running on %d processors' % comm.size)
+  sys.exit()
 
 size_ranges = np.arange(5,15,1)
 connectance_ranges = np.linspace(0.2,0.6,10)
-PSW = np.ones((len(size_ranges),10))*-100
-num_samples = 10
-size = size_ranges[comm.rank]
-np.random.seed(0)
-for j,C1 in enumerate(connectance_ranges):
-  # Need at least 2 resource users and one gov org
-  N = 2
-  M = 1
-  rand = np.random.rand(size-3)
-  N += np.sum(rand < 0.6)
-  K = np.sum(rand < 0.8) - np.sum(rand < 0.6)
-  M += np.sum(rand > 0.8)
-  rand2 = np.random.rand(N-1)
-  # choose at random whether guaranteed extractor is just extractor or extractor + accessor
-  rand3 = np.random.rand(1)
-  if rand3 < 0.5:
-    N1 = 1 + np.sum(rand2 < 0.33)
-    N2 = np.sum(rand2 > 0.33) - np.sum(rand2 > 0.66)
-  else:
-    N1 = np.sum(rand2 < 0.33)
-    N2 = 1 + np.sum(rand2 > 0.33) - np.sum(rand2 > 0.66)
-  N3 = np.sum(rand2 > 0.66)
-  N = N1 + N2 + N3 + K # total number of resource users
-  T = N + M + 1 # total number of state variables
-  C2 = 0.2 # gov org-gov org connectance
-  print((N1,N2,N3,K,M))
-  PSW[comm.rank,j] = run_multiple(N1,N2,N3,K,M,T,C1,C2,num_samples)
+num_samples = 300
 
-  with open('PSW.csv', 'w+') as f:
-    csvwriter = csv.writer(f)
-    csvwriter.writerows(PSW)
+size = size_ranges[comm.rank//10]
+C1 = connectance_ranges[comm.rank%10]
+np.random.seed(2)
+C2 = 0.2
+
+num_stable_webs, num_stable_webs_filtered, num_converged = run_multiple(size,C1,C2,num_samples)
+
+print(num_stable_webs)
+print(num_stable_webs_filtered)
+
+with open('PSW_%s.csv'%(comm.rank), 'w+') as f:
+  csvwriter = csv.writer(f)
+  csvwriter.writerow((num_stable_webs, num_stable_webs_filtered, num_converged))
 

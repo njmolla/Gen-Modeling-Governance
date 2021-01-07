@@ -1,5 +1,7 @@
 import numpy as np
+from numba import jit
 
+#@jit(nopython=True)
 
 def correct_scale_params(scale_params, alloc_params, i):
   '''
@@ -14,6 +16,7 @@ def correct_scale_params(scale_params, alloc_params, i):
         = np.squeeze(np.random.dirichlet(np.ones(len(scale_params[alloc_params==0][i][scale_params[alloc_params==0][i]!=0])),1))
   return scale_params
 
+#@jit(nopython=True)
 
 def determine_stability(N,K,M,T,
 	  phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,

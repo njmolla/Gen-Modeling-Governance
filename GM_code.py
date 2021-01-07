@@ -19,24 +19,32 @@ def sample(N1,N2,N3,K,M,T, C1,C2):
     beta_tildes = np.zeros([1,N]) # $
 
     # beta parameters for extractors
-    betas[0,0:N1] = np.random.rand(N1)
-    beta_tildes[0,0:N1] = 1 - betas[0,0:N1]
-    # beta parameters for resource users with both uses
-    beta_params = np.random.dirichlet(np.ones(3),N2).transpose()
-    betas[0,N1:N2+N1] = beta_params[0]
-    beta_tildes[0,N1:N2+N1] = beta_params[1]
-    beta_hats[0,N1:N2+N1] = beta_params[2]
-    # beta parameters for resource users with non-extractive use
-    beta_tildes[0,N2+N1:N-K] =  np.random.rand(N3)
-    beta_hats[0,N1+N2:N1+N2+N3] = 1 - beta_tildes[0,N1+N2:N1+N2+N3]
-    # beta parameters for bridging organizations
-    beta_tildes[0,N-K:N] = np.ones(K) # one for all bridging orgs
+    if N==1:
+      #special case if there is only one actor (no collaboration possible)
+      if N1 == 1:
+        betas[0] = 1
+      elif N2 == 1:
+        betas[0] = np.random.rand(1)
+        beta_hats = 1 - betas
+    else:
+      betas[0,0:N1] = np.random.rand(N1)
+      beta_tildes[0,0:N1] = 1 - betas[0,0:N1]
+      # beta parameters for resource users with both uses
+      beta_params = np.random.dirichlet(np.ones(3),N2).transpose()
+      betas[0,N1:N2+N1] = beta_params[0]
+      beta_tildes[0,N1:N2+N1] = beta_params[1]
+      beta_hats[0,N1:N2+N1] = beta_params[2]
+      # beta parameters for resource users with non-extractive use
+      beta_tildes[0,N2+N1:N-K] =  np.random.rand(N3)
+      beta_hats[0,N1+N2:N1+N2+N3] = 1 - beta_tildes[0,N1+N2:N1+N2+N3]
+      # beta parameters for bridging organizations
+      beta_tildes[0,N-K:N] = np.ones(K) # one for all bridging orgs
 
     sigmas = np.zeros([N,N]) # sigma_k,n is kxn $
     sigmas = np.random.dirichlet(np.ones(N),N)
 
     etas = np.random.rand(1,N) # $
-    eta_bars = np.squeeze(1-etas)
+    eta_bars = np.squeeze(1-etas) # TODO: fix for 1 actor/no undermining
 
     lambdas = np.zeros([N,N])  # lambda_k,n is kxn $
     lambdas = np.random.dirichlet(np.ones(N),N)
@@ -80,7 +88,7 @@ def sample(N1,N2,N3,K,M,T, C1,C2):
     while np.count_nonzero(links) == 0:
       links = np.random.rand(N1+N2) < C1
     de_dg[:,:,0:N1+N2][:,:,links] = np.random.uniform(-1,1,(1,M,sum(links)))
-    dg_dF = np.ones((N,M,N)) #np.random.uniform(0,2,(N,M,N))  # dg_m,n/(dF_i,m,n * x_i) is ixmxn $###############
+    dg_dF = np.random.uniform(0,2,(N,M,N))  # dg_m,n/(dF_i,m,n * x_i) is ixmxn $###############
                                             # should be positive!
     dg_dy = np.random.rand(M,N)*2 # $
     dp_dy = np.random.rand(M,N)*2 # $
@@ -135,10 +143,11 @@ def sample(N1,N2,N3,K,M,T, C1,C2):
     if is_connected == False:
       continue
 
-    # find nash equilibrium strategies
-    F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm, sigmas, lambdas = nash_equilibrium(2000, J, N,K,M,T,
-        phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-        F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm)
+#    # find nash equilibrium strategies
+#    F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm, sigmas, lambdas, converged = nash_equilibrium(2000, J, N,K,M,T,
+#        phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
+#        F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm)
+    converged = True
 
     # ------------------------------------------------------------------------
     # See if system is stable and if it is weakly connected
@@ -148,7 +157,6 @@ def sample(N1,N2,N3,K,M,T, C1,C2):
     J, eigvals, stability = determine_stability(N,K,M,T,
         phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
         F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm)
-    print(eigvals.real)
 
     adjacency_matrix = np.zeros([T,T])
     adjacency_matrix[J != 0] = 1
@@ -157,31 +165,63 @@ def sample(N1,N2,N3,K,M,T, C1,C2):
     if is_connected == False:
       print('not weakly connected')
 
-  return (stability, J,
+  return (stability, J, converged,
       phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
       F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm)
 
 
-def run_multiple(N1,N2,N3,K,M,T, C1,C2, num_samples):
+def run_multiple(size,C1,C2,num_samples):
   '''
   Run num_samples samples and return the proportion of webs that are stable.
   '''
+
   num_stable_webs = 0
+  num_stable_webs_filtered = 0
+  num_converged = 0
+
   for _ in range(num_samples):
-    stability = sample(N1,N2,N3,K,M,T,C1,C2)[0]  # stability is the first return value
-    print(stability)
+      # Need at least 2 resource users and one gov org
+    N = 2
+    M = 1
+    rand = np.random.rand(size-3)
+    N += np.sum(rand < 0.6)
+    K = np.sum(rand < 0.8) - np.sum(rand < 0.6)
+    M += np.sum(rand > 0.8)
+    rand2 = np.random.rand(N-1)
+    # choose at random whether guaranteed extractor is just extractor or extractor + accessor
+    rand3 = np.random.rand(1)
+    if rand3 < 0.5:
+      N1 = 1 + np.sum(rand2 < 0.33)
+      N2 = np.sum(rand2 > 0.33) - np.sum(rand2 > 0.66)
+    else:
+      N1 = np.sum(rand2 < 0.33)
+      N2 = 1 + np.sum(rand2 > 0.33) - np.sum(rand2 > 0.66)
+    N3 = np.sum(rand2 > 0.66)
+    N = N1 + N2 + N3 + K # total number of resource users
+    T = N + M + 1 # total number of state variables
+    print((N1,N2,N3,K,M))
+    try:
+      result = sample(N1,N2,N3,K,M,T,C1,C2)
+    except:
+      continue
+    stability = result[0] # stability is the first return value
+    converged = result[2]
     if stability:
       num_stable_webs += 1
+      if converged:
+        num_stable_webs_filtered += 1
+    if converged:
+      num_converged += 1
 
-  return num_stable_webs / num_samples  # proportion of stable webs
+  return num_stable_webs, num_stable_webs_filtered, num_converged  # proportion of stable webs
 
 
 def run_once(N1,N2,N3,K,M,T, C1,C2):
   '''
   Do a single run and return more detailed output.
   '''
-  np.random.seed(0)
-  (stability, J,
+  np.random.seed(3)
+  (stability, J, converged,
       phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
       F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm) = sample(N1,N2,N3,K,M,T,C1,C2)
 
@@ -200,7 +240,7 @@ def run_once(N1,N2,N3,K,M,T, C1,C2):
 
 def main():
   # Size of system
-  N1 = 1  # number of resource users that benefit from extraction only
+  N1 = 1 # number of resource users that benefit from extraction only
   N2 = 0 # number of users with both extractive and non-extractive use
   N3 = 0  # number of users with only non-extractive use
   K = 0 # number of bridging orgs
@@ -227,26 +267,3 @@ def test_calibration():
       phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
       F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm) = main()
 
-
-def test():
-  (stability, total_connectance, J,
-      phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-      F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm) = main()
-
-  # Size of system
-  N1 = 2  # number of resource users that benefit from extraction only
-  N2 = 0  # number of users with both extractive and non-extractive use
-  N3 = 0  # number of users with only non-extractive use
-  K = 1  # number of bridging orgs
-  M = 1  # number of gov orgs
-  T = N1 + N2 + N3 + K + M + 1  # total number of state variables
-
-  # Connectance of system (for different interactions)
-  C1 = 0.2  # Connectance between governance organizations and resource users.
-            # (proportion of resource extraction/access interactions influenced by governance)
-  C2 = 0.2  # Connectance between governance organizations and other governance organizations.
-
-  for _ in range(1):
-    nash_equilibrium(1, J, N1+N2+N3+K,K,M,T,
-        phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-        F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm)
