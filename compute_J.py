@@ -20,7 +20,7 @@ def correct_scale_params(scale_params, alloc_params, i):
 
 def determine_stability(N,K,M,T,
 	  phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-	  F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm):
+	  F,H,W,K_p,D_jm):
 
   # --------------------------------------------------------------------------
   # Compute Jacobian (vectorized)
@@ -32,7 +32,7 @@ def determine_stability(N,K,M,T,
   # dr•/dx (1x(N))
   # For the NxMxN stuff: i = axis 0, m = axis 1, n = axis 2
   J[0,1:N+1] = -phi * np.sum(
-        np.multiply(psis,np.sum(np.multiply(de_dg, dg_dF * (F_p - F_n)), axis = 1)),
+        np.multiply(psis,np.sum(np.multiply(de_dg, dg_dF * F), axis = 1)),
                                           # 1xmxn   ixmxn
        axis = 1)
 
@@ -46,10 +46,14 @@ def determine_stability(N,K,M,T,
   J[1:N+1,0] = np.squeeze(alphas * (betas*db_de*de_dr + beta_hats*dq_da*da_dr))
                                            # 1xn
   # dx•/dx for n != i
+  W_p = np.zeros((N,N))
+  W_p[W>0.001] = W[W>0.001]
+  W_n = np.zeros((N,N))
+  W_n[W<-0.001] = W[W<-0.001]
   J[1:N+1,1:N+1] = np.transpose(np.multiply(alphas,
-        np.multiply(betas*db_de,       np.sum(np.multiply(de_dg, dg_dF*(F_p - F_n)), axis = 1))
+        np.multiply(betas*db_de,       np.sum(np.multiply(de_dg, dg_dF*F), axis = 1))
                      #  1xn                                ixmxn
-        + np.multiply(beta_hats*dq_da, np.sum(np.multiply(da_dp, dp_dH*(H_p - H_n)), axis = 1))
+        + np.multiply(beta_hats*dq_da, np.sum(np.multiply(da_dp, dp_dH*H), axis = 1))
         + np.multiply(beta_tildes,sigmas*dc_dw_p*W_p)
                        # 1xn            ixn
         - np.multiply(etas,lambdas*dc_dw_n*W_n)
@@ -58,9 +62,9 @@ def determine_stability(N,K,M,T,
   # dx•/dx for n = i (overwrite the diagonal)
   indices = np.arange(1,N+1)  # Access the diagonal of the actor part.
   J[indices,indices] = np.squeeze(alphas) * (
-        np.squeeze(betas*db_de)*np.sum(np.squeeze(de_dg)*np.diagonal(dg_dF,axis1=0, axis2=2)*np.diagonal((F_p - F_n), axis1=0, axis2=2),axis=0)
+        np.squeeze(betas*db_de)*np.sum(np.squeeze(de_dg)*np.diagonal(dg_dF,axis1=0, axis2=2)*np.diagonal(F, axis1=0, axis2=2),axis=0)
         #                                                          mxn                                 mxn
-        + np.squeeze(beta_hats*dq_da)*np.sum(np.squeeze(da_dp)*np.diagonal(dp_dH,axis1=0, axis2=2)*np.diagonal((H_p - H_n),axis1=0, axis2=2),axis=0)
+        + np.squeeze(beta_hats*dq_da)*np.sum(np.squeeze(da_dp)*np.diagonal(dp_dH,axis1=0, axis2=2)*np.diagonal(H,axis1=0, axis2=2),axis=0)
         - eta_bars*dl_dx
       )
   # dx•/dy
@@ -72,6 +76,10 @@ def determine_stability(N,K,M,T,
 
   # dy•/dr = 0
   # dy•/dx, result is mxi
+  K_plus = np.zeros((N,N))
+  K_plus[K_p>0.001] = K_p[K_p>0.001]
+  K_n = np.zeros((N,N))
+  K_n[K_p<-0.001] = K_p[K_p<-0.001]
   J[N+1:,1:N+1] = np.transpose(np.multiply(mus,
         np.multiply(rhos,di_dK_p*K_p)
         - np.multiply(thetas,di_dK_n*K_n)

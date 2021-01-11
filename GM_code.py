@@ -117,14 +117,10 @@ def sample(N1,N2,N3,K,M,T, C1,C2):
     # ------------------------------------------------------------------------
     # Effort allocation parameters, initial guesses
     # ------------------------------------------------------------------------
-    F_p = np.random.rand(N,M,N)  # F_i,m,n is ixmxn positive effort for influencing resource extraction governance $
-    F_n = np.random.rand(N,M,N)
-    H_p = np.random.rand(N,M,N)  # effort for influencing resource access governance $
-    H_n = np.random.rand(N,M,N)
-    W_p = np.random.rand(N,N)  # effort for collaboration. W_i,n is ixn $
-    W_n = np.random.rand(N,N)  # effort for undermining. W_i,n is ixn $
+    F = np.random.rand(N,M,N)  # F_i,m,n is ixmxn positive effort for influencing resource extraction governance $
+    H = np.random.rand(N,M,N)  # effort for influencing resource access governance $
+    W = np.random.rand(N,N)  # effort for collaboration. W_i,n is ixn $
     K_p = np.random.rand(N,M)  # effort for more influence for gov orgs $
-    K_n = np.random.rand(N,M)  # effort for less influence for gov orgs $
     D_jm = np.random.rand(N,M,M)  # D_i,j,m is ixmxj effort for transferring power from each gov org to each other $
 
 
@@ -135,7 +131,7 @@ def sample(N1,N2,N3,K,M,T, C1,C2):
     # calculate Jacobian
     J, eigvals, stability = determine_stability(N,K,M,T,
         phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-        F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm)
+        F,H,W,K_p,D_jm)
     adjacency_matrix = np.zeros([T,T])
     adjacency_matrix[J != 0] = 1
     graph = nx.from_numpy_array(adjacency_matrix,create_using=nx.DiGraph)
@@ -156,7 +152,7 @@ def sample(N1,N2,N3,K,M,T, C1,C2):
     # check stability and use Jacobian to check whether system is weakly connected
     J, eigvals, stability = determine_stability(N,K,M,T,
         phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-        F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm)
+        F,H,W,K_p,D_jm)
 
     adjacency_matrix = np.zeros([T,T])
     adjacency_matrix[J != 0] = 1
@@ -167,7 +163,7 @@ def sample(N1,N2,N3,K,M,T, C1,C2):
 
   return (stability, J, converged,
       phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-      F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm)
+      F,H,W,K_p,D_jm)
 
 
 def run_multiple(size,C1,C2,num_samples):
@@ -223,19 +219,19 @@ def run_once(N1,N2,N3,K,M,T, C1,C2):
   np.random.seed(3)
   (stability, J, converged,
       phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-      F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm) = sample(N1,N2,N3,K,M,T,C1,C2)
+      F,H,W,K_p,D_jm) = sample(N1,N2,N3,K,M,T,C1,C2)
 
-  total_connectance = (np.count_nonzero(de_dg) + np.count_nonzero(da_dp)
-      + np.count_nonzero(F_p) + np.count_nonzero(F_n) + np.count_nonzero(H_p) + np.count_nonzero(H_p)
-      + np.count_nonzero(W_p) + np.count_nonzero(W_n) + np.count_nonzero(K_p) + np.count_nonzero(K_n)
-      + np.count_nonzero(omegas) + np.count_nonzero(epsilons) + np.count_nonzero(D_jm)) \
-      /(np.size(de_dg) + np.size(da_dp) + np.size(F_p) + np.size(F_n) + np.size(H_p) + np.size(H_n)
-      + np.size(W_p) + np.size(W_n) + np.size(K_p) + np.size(K_n) + np.size(omegas)
-      + np.size(epsilons) + np.size(D_jm))
+#  total_connectance = (np.count_nonzero(de_dg) + np.count_nonzero(da_dp)
+#      + np.count_nonzero(F_p) + np.count_nonzero(F_n) + np.count_nonzero(H_p) + np.count_nonzero(H_p)
+#      + np.count_nonzero(W_p) + np.count_nonzero(W_n) + np.count_nonzero(K_p) + np.count_nonzero(K_n)
+#      + np.count_nonzero(omegas) + np.count_nonzero(epsilons) + np.count_nonzero(D_jm)) \
+#      /(np.size(de_dg) + np.size(da_dp) + np.size(F_p) + np.size(F_n) + np.size(H_p) + np.size(H_n)
+#      + np.size(W_p) + np.size(W_n) + np.size(K_p) + np.size(K_n) + np.size(omegas)
+#      + np.size(epsilons) + np.size(D_jm))
 
-  return (stability, total_connectance, J,
+  return (stability, J,
           phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-          F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm)
+          F,H,W,K_p,D_jm)
 
 
 def main():
@@ -256,14 +252,14 @@ def main():
 
 
 if __name__ == "__main__":
-  (stability, total_connectance, J,
+  (stability, J,
       phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-      F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm) = main()
+      F,H,W,K_p,D_jm) = main()
 
 
 
 def test_calibration():
   (stability, total_connectance, J,
       phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-      F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm) = main()
+      F,H,W,K_p,D_jm) = main()
 
