@@ -441,23 +441,26 @@ def grad_descent_constrained(initial_point, max_steps, n, l, J, N,K,M,T,
     strategy parameters????
   return the new and improved strategy
   '''
-  raw_grad = []
-  projected_grad = []
-  strategies = []
+  raw_grad = [] # for debugging
+  projected_grad = [] # for debugging
+  strategies = [] # for debugging
   grad = objective_grad(initial_point, n, l, J, N,K,M,T,
                         phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
                         F,H,W,K_p,D_jm)
-  raw_grad.append(grad)
+
+  raw_grad.append(grad) # for debugging
+  x = initial_point  # strategy
+  strategies.append(x) # for debugging
   # figure out which plane to project gradient onto
-  plane = np.ones(len(initial_point))
-  plane[initial_point<0] = -1 # make sign of 'plane' match point
+  plane = np.sign(x)
+  plane[abs(x)<0.001] = np.sign(grad[abs(x)<0.001])
+  plane[-(M**2):] = 1
+
   # Project gradient onto the plane sum(efforts) == 1
   grad = grad - np.dot(grad, plane)*plane/len(grad)
-  projected_grad.append(grad)
+  projected_grad.append(grad) # for debugging
   grad_mag = np.linalg.norm(grad)  # to check for convergence
 
-  x = initial_point  # strategy
-  strategies.append(x)
   alpha = 0.05
   num_steps = 0
   while grad_mag > 1e-5 and num_steps < max_steps:
@@ -489,17 +492,18 @@ def grad_descent_constrained(initial_point, max_steps, n, l, J, N,K,M,T,
     grad = objective_grad(x, n, l, J, N,K,M,T,
                           phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
                           F,H,W,K_p,D_jm)
-    raw_grad.append(grad)
+    raw_grad.append(grad) # for debugging
+
     # Project gradient onto the plane abs(params)=1
     grad = grad - np.dot(grad, plane)*plane/len(grad)
-    projected_grad.append(grad)
+    projected_grad.append(grad) # for debugging
 
     grad_mag = np.linalg.norm(grad)  # to check for convergence
 
     num_steps += 1
     if grad_mag < 1e-5:
       print('gradient descent convergence reached')
-  return x, raw_grad, projected_grad, strategies
+  return x, raw_grad, projected_grad, strategies # normally return only x
 
 
 def nash_equilibrium(max_iters,J,N,K,M,T,
