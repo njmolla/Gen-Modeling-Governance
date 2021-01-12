@@ -458,7 +458,7 @@ def grad_descent_constrained(initial_point, max_steps, n, l, J, N,K,M,T,
   plane[-(M**2):] = 1
 
   # Project gradient onto the plane sum(efforts) == 1
-  grad = grad - np.dot(grad, plane)*plane/len(grad)
+  grad = grad - np.dot(grad, plane)*plane/sum(abs(plane))
   projected_grad.append(grad) # for debugging
   grad_mag = np.linalg.norm(grad)  # to check for convergence
 
@@ -489,6 +489,8 @@ def grad_descent_constrained(initial_point, max_steps, n, l, J, N,K,M,T,
     plane = np.sign(x)
     plane[abs(x)<0.001] = np.sign(grad[abs(x)<0.001])
     plane[-(M**2):] = 1 # for parameters that can only be positive, set to positive
+    print(raw_grad[-1])
+    print(projected_grad[-1])
     print(x) # for debugging
     print(plane) # for debugging
 
@@ -499,7 +501,7 @@ def grad_descent_constrained(initial_point, max_steps, n, l, J, N,K,M,T,
     raw_grad.append(grad) # for debugging
 
     # Project gradient onto the plane abs(params)=1
-    grad = grad - np.dot(grad, plane)*plane/len(grad)
+    grad = grad - np.dot(grad, plane)*plane/sum(abs(plane))
     projected_grad.append(grad) # for debugging
 
     grad_mag = np.linalg.norm(grad)  # to check for convergence
