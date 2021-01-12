@@ -464,16 +464,15 @@ def grad_descent_constrained(initial_point, max_steps, n, l, J, N,K,M,T,
     # Follow the projected gradient for a fixed step size alpha
     x = x + alpha*grad
     # figure out which plane to project gradient onto
-    plane = np.ones(len(x))
-    plane[x<0] = -1 # make sign of 'plane' match point
-    if np.any(abs(x)<0.002):
-      plane[abs(x)<0.002] = np.where(grad[abs(x)<0.002]==0,0,grad[abs(x)<0.002]/abs(grad[abs(x)<0.002]))
+    plane = np.sign(x)
+    plane[abs(x)<0.001] = np.sign(grad[abs(x)<0.001])
     plane[-(M**2):] = 1 # for parameters that can only be positive, set to positive
     print(x)
     print(plane)
     # If strategy does not have all efforts >= 0, project onto space of legal strategies
     if np.any(x*plane < 0):
       try:
+        print(x*plane)
         ub = np.sum(abs(x)) #np.sum(abs(x[x*plane>0]))
 #        print(np.sum(np.maximum(x*plane - 0, 0)) - 1)
 #        print(x*plane)
