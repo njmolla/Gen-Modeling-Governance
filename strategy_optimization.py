@@ -451,6 +451,7 @@ def grad_descent_constrained(initial_point, max_steps, n, l, J, N,K,M,T,
   raw_grad.append(grad) # for debugging
   x = initial_point  # strategy
   strategies.append(x) # for debugging
+
   # figure out which plane to project gradient onto
   plane = np.sign(x)
   plane[abs(x)<0.001] = np.sign(grad[abs(x)<0.001])
@@ -466,12 +467,7 @@ def grad_descent_constrained(initial_point, max_steps, n, l, J, N,K,M,T,
   while grad_mag > 1e-5 and num_steps < max_steps:
     # Follow the projected gradient for a fixed step size alpha
     x = x + alpha*grad
-    # figure out which plane to project gradient onto
-    plane = np.sign(x)
-    plane[abs(x)<0.001] = np.sign(grad[abs(x)<0.001])
-    plane[-(M**2):] = 1 # for parameters that can only be positive, set to positive
-    print(x)
-    print(plane)
+
     # If strategy does not have all efforts >= 0, project onto space of legal strategies
     if np.any(x*plane < 0):
       try:
@@ -488,6 +484,14 @@ def grad_descent_constrained(initial_point, max_steps, n, l, J, N,K,M,T,
         raise Exception('bisection bounds did not work')
       x = plane * np.maximum(x*plane - mu, 0)
     strategies.append(x)
+
+    # figure out which plane to project gradient onto
+    plane = np.sign(x)
+    plane[abs(x)<0.001] = np.sign(grad[abs(x)<0.001])
+    plane[-(M**2):] = 1 # for parameters that can only be positive, set to positive
+    print(x) # for debugging
+    print(plane) # for debugging
+
     # Compute new gradient and update strategy parameters to match x
     grad = objective_grad(x, n, l, J, N,K,M,T,
                           phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
