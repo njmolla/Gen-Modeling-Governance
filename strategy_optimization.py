@@ -62,32 +62,6 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
   dydot_dW_p = np.zeros([M,N,N])
 
   drdot_dW_n = np.zeros([N,N])
-  '''
-  drdot_dF = -phi*np.multiply(np.reshape(psis,(1,1,N)),np.multiply(de_dg,dg_dF))
-  dxdot_dF = np.zeros([N,N,M,N])
-  dxdot_dF[np.arange(0,N),:,:,np.arange(0,N)] = np.transpose(np.multiply(
-             #n k m (gets rid of last index)
-        np.reshape(alphas*betas*db_de, (1,1,N)),
-                    # 1n    1n    1n
-        np.multiply(de_dg,dg_dF)
-                  # 1mn    kmn
-      ), (2,0,1))  # transpose kmn -> nkm
-  dydot_dF = np.zeros([M,N,M,N])
-
-  drdot_dH = np.zeros([N,M,N])
-  dxdot_dH = np.zeros([N,N,M,N])
-  dxdot_dH[np.arange(0,N),:,:,np.arange(0,N)] = np.transpose(np.multiply(np.reshape(alphas*beta_hats*dq_da,(1,1,N)),
-                                                             np.multiply(da_dp,dp_dH)), (2,0,1))
-  dydot_dH = np.zeros([M,N,M,N])
-
-  drdot_dW_p = np.zeros([N,N])
-  dxdot_dW_p = np.zeros([N,N,N])
-  # result is nxkxi
-  dxdot_dW_p[np.arange(0,N),:,np.arange(0,N)] = np.transpose(np.multiply(alphas*beta_tildes,np.multiply(sigmas,dc_dw_p)))
-  dydot_dW_p = np.zeros([M,N,N])
-
-  drdot_dW_n = np.zeros([N,N])
-  '''
   dxdot_dW_n = np.zeros([N,N,N])
   dxdot_dW_n[np.arange(0,N),:,np.arange(0,N)] = np.transpose(np.multiply(-alphas*etas,np.multiply(lambdas,dc_dw_n)))
   dydot_dW_n = np.zeros([M,N,N])
@@ -167,88 +141,7 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
   dR_dDjm = dSS_dDjm.reshape(T,N,M,M)[0]
   dX_dDjm = dSS_dDjm.reshape(T,N,M,M)[1:N+1]
   dY_dDjm = dSS_dDjm.reshape(T,N,M,M)[N+1:N+1+M]
-  '''
-  dxdot_dW_n = np.zeros([N,N,N])
-  dxdot_dW_n[np.arange(0,N),:,np.arange(0,N)] = np.transpose(np.multiply(-alphas*etas,np.multiply(lambdas,dc_dw_n)))
-  dydot_dW_n = np.zeros([M,N,N])
 
-  drdot_dK_p = np.zeros([N,M])
-  dxdot_dK_p = np.zeros([N,N,M])
-  dydot_dK_p = np.zeros([M,N,M])
-  # result is mxn
-  dydot_dK_p[np.arange(0,M),:,np.arange(0,M)] = np.transpose(np.multiply(mus*rhos,di_dK_p))
-
-  drdot_dK_n = np.zeros([N,M])
-  dxdot_dK_n = np.zeros([N,N,M])
-  dydot_dK_n = np.zeros([M,N,M])
-  dydot_dK_n[np.arange(0,M),:,np.arange(0,M)] = np.transpose(np.multiply(-mus*thetas,di_dK_n))
-
-  drdot_dDjm = np.zeros([N,M,M])
-  dxdot_dDjm = np.zeros([N,N,M,M])
-  dydot_dDjm = np.zeros([M,N,M,M]) # mxnxjxl
-  # case for the gov org being transferred to (m=l), result is mxnxj
-  dydot_dDjm[np.diag_indices(M,1),:,:,np.diag_indices(M,1)] = np.transpose(np.multiply(mus*rho_bars,np.multiply(omegas,dt_dD_jm)),(1,0,2)) # eq ___, mxnxj
-  # case for the gov org transferring (m=j), result is mxnxl
-  dydot_dDjm[np.diag_indices(M,1),:,np.diag_indices(M,1),:] = np.multiply(np.reshape(np.transpose(-mus*np.squeeze(theta_bars)),(M,1,1)),np.transpose(np.multiply(epsilons,dt_dD_jm),(2,0,1))) # eq __, mxnxl
-  '''
-  '''
-  ## Compute how the steady state of the system changes with respect to each strategy parameter
-  # dSdot_dF == how steady state changes wrt F, packed into one variable
-  dSdot_dF = np.concatenate((np.broadcast_to(drdot_dF, (1,N,M,N)), dxdot_dF, dydot_dF), axis=0)
-  dSdot_dF = dSdot_dF.reshape(T, (N)**2*M)
-  # do the actual computation
-  dSS_dF = -J_inv @ dSdot_dF
-  # unpack
-  dR_dF = dSS_dF.reshape(T,N,M,N)[0]
-  dX_dF = dSS_dF.reshape(T,N,M,N)[1:N+1]
-  dY_dF = dSS_dF.reshape(T,N,M,N)[N+1:N+1+M]
-
-  dSdot_dH = np.concatenate((np.broadcast_to(drdot_dH,(1,N,M,N)),dxdot_dH,dydot_dH), axis=0)
-  dSdot_dH = dSdot_dH.reshape(T,(N)**2*M)
-  dSS_dH = -J_inv @ dSdot_dH
-  dR_dH = dSS_dH.reshape(T,N,M,N)[0]
-  dX_dH = dSS_dH.reshape(T,N,M,N)[1:N+1]
-  dY_dH = dSS_dH.reshape(T,N,M,N)[N+1:N+1+M]
-
-  dSdot_dW_p = np.concatenate((np.broadcast_to(drdot_dW_p,(1,N,N)),dxdot_dW_p,dydot_dW_p), axis=0)
-  dSdot_dW_p = dSdot_dW_p.reshape(T,(N)**2)
-  dSS_dW_p = -J_inv @ dSdot_dW_p
-  dSS_dW_p = dSS_dW_p.reshape(T,N,N)
-  dR_dW_p = dSS_dW_p.reshape(T,N,N)[0]
-  dX_dW_p = dSS_dW_p.reshape(T,N,N)[1:N+1]
-  dY_dW_p = dSS_dW_p.reshape(T,N,N)[N+1:N+1+M]
-
-  dSdot_dW_n = np.concatenate((np.broadcast_to(drdot_dW_n,(1,N,N)),dxdot_dW_n,dydot_dW_n), axis=0)
-  dSdot_dW_n = dSdot_dW_n.reshape(T,(N)**2)
-  dSS_dW_n = -J_inv @ dSdot_dW_n
-  dSS_dW_n = dSS_dW_n.reshape(T,N,N)
-  dR_dW_n = dSS_dW_n.reshape(T,N,N)[0]
-  dX_dW_n = dSS_dW_n.reshape(T,N,N)[1:N+1]
-  dY_dW_n = dSS_dW_n.reshape(T,N,N)[N+1:N+1+M]
-
-  dSdot_dK_p = np.concatenate((np.broadcast_to(drdot_dK_p,(1,N,M)),dxdot_dK_p,dydot_dK_p), axis=0)
-  dSdot_dK_p = dSdot_dK_p.reshape(T,(N)*M)
-  dSS_dK_p = -J_inv @ dSdot_dK_p
-  dSS_dK_p = dSS_dK_p.reshape(T,N,M)
-  dR_dK_p = dSS_dK_p.reshape(T,N,M)[0]
-  dX_dK_p = dSS_dK_p.reshape(T,N,M)[1:N+1]
-  dY_dK_p = dSS_dK_p.reshape(T,N,M)[N+1:N+1+M]
-
-  dSdot_dK_n = np.concatenate((np.broadcast_to(drdot_dK_n,(1,N,M)),dxdot_dK_n,dydot_dK_n), axis=0)
-  dSdot_dK_n = dSdot_dK_n.reshape(T,(N)*M)
-  dSS_dK_n = -J_inv @ dSdot_dK_n
-  dSS_dK_n = dSS_dK_n.reshape(T,N,M)
-  dR_dK_n = dSS_dK_n.reshape(T,N,M)[0]
-  dX_dK_n = dSS_dK_n.reshape(T,N,M)[1:N+1]
-  dY_dK_n = dSS_dK_n.reshape(T,N,M)[N+1:N+1+M]
-
-  dSdot_dDjm = np.concatenate((np.broadcast_to(drdot_dDjm,(1,N,M,M)),dxdot_dDjm,dydot_dDjm), axis=0)
-  dSdot_dDjm = dSdot_dDjm.reshape(T,(N)*M**2)
-  dSS_dDjm = -J_inv @ dSdot_dDjm
-  dR_dDjm = dSS_dDjm.reshape(T,N,M,M)[0]
-  dX_dDjm = dSS_dDjm.reshape(T,N,M,M)[1:N+1]
-  dY_dDjm = dSS_dDjm.reshape(T,N,M,M)[N+1:N+1+M]
-  '''
   # calculate gradients of objective function for one actor
   # for extraction
   # n's objective, l's strategy (same for resource users) n,l used to be i,j
@@ -397,6 +290,11 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
               ),axis=0)
           ,axis=0)
 
+#  print(np.concatenate((grad_e_F.flatten(),
+#                           grad_e_H.flatten(),
+#                           grad_e_W.flatten(),
+#                           grad_e_K.flatten(),
+#                           grad_e_Djm.flatten())))
 
   if betas[0,n] > 0 and beta_hats[0,n] > 0:  # Check if n is extractor and accessor
     # objective function gradient for RUs that extract and access the resource
