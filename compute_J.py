@@ -76,12 +76,12 @@ def determine_stability(N,K,M,T,
 
   # dy•/dr = 0
   # dy•/dx, result is mxi
-  K_plus = np.zeros((N,N))
-  K_plus[K_p>0.001] = K_p[K_p>0.001]
-  K_n = np.zeros((N,N))
-  K_n[K_p<-0.001] = K_p[K_p<-0.001]
+  K_plus = np.zeros((N,M))
+  K_plus[K_p>0] = K_p[K_p>0]
+  K_n = np.zeros((N,M))
+  K_n[K_p<0] = abs(K_p[K_p<0])
   J[N+1:,1:N+1] = np.transpose(np.multiply(mus,
-        np.multiply(rhos,di_dK_p*K_p)
+        np.multiply(rhos,di_dK_p*K_plus)
         - np.multiply(thetas,di_dK_n*K_n)
         + np.multiply(np.squeeze(rho_bars,axis=2),np.sum(np.multiply(omegas,dt_dD_jm*D_jm),axis=2))
                                                                          # ixmxj
@@ -106,7 +106,7 @@ def determine_stability(N,K,M,T,
       )
 
 
-	# --------------------------------------------------------------------------
+  # --------------------------------------------------------------------------
   # Compute the eigenvalues of the Jacobian
   # --------------------------------------------------------------------------
   eigvals = np.linalg.eigvals(J)

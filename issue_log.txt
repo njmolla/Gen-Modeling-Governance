@@ -8,19 +8,62 @@ Issue log:
    - Need to output grad_e_W_p and similar instead of grad_e_W_p[0] now that they have reduced dimension due to previous changes
  - UnboundLocalError: local variable 'mu' referenced before assignment
    - was an issue with the optimization, though may also be because of failure to import scipy package
+ - cycling in strategy optimization
+   - switched to strategies that can be positive or negative in each components (rather than having those separated)
 
 Debuggging strategy optimization:
 
-Original case:
-Seed = 0, set dg_dF = 1
-Dg_dF = 1
-De_dg = -0.8257414
-Cycled between F+ and F-. Should be F-.
 
-Case 2:
-Seed = 0, dg_dF random
+Case 1: works now
+Seed = 0,
 Dg_dF = 0.04
 De_dg = -0.8257414
 di_dK_p = 1.88933783
 di_dK_n = 1.04369664
 Cycles between K+ and K- (perhaps because exponent parameters are similar). Should be K-.
+
+Case 2:
+Seed = 1
+dg_dF = 0.8346096
+de_dg = 0.34093502
+di_dK_p = 0.07810957
+di_dK_n = 0.33966084
+[ 0.45066286,  0.        , -0.        , -0.54933714,  0.        ]
+K should be positive I think
+
+Case 3:
+Seed = 2
+dg_dF = 0.36887973
+de_dg = 0.02715624
+di_dK_p = 1.19349062
+di_dK_n = 0.452024
+[ 0.,  0.,  0., -1.,  0.]
+K should be positive
+
+Case 4:
+Seed = 3
+dg_dF = 0.51850489
+de_dg = 0.11770818
+di_dK_p = 1.8727673
+di_dK_n = 1.95199084
+[-0., -0.,  0., -1.,  0.]
+K should be positive
+
+Case 5:
+Seed = 4
+dg_dF = 1.96680135
+de_dg = 0.72598647
+di_dK_p = 0.34633084
+di_dK_n = 0.14989717
+[-0., -0.,  0., -1.,  0.]
+K should be positive
+
+Case 6:
+Seed = 5
+dg_dF = 0.54817292
+de_dg = 0.75987406
+di_dK_p = 0.33122572
+di_dK_n = 1.92786106
+[-0., -0.,  0., -1.,  0.]
+K should be positive
+

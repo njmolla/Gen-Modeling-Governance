@@ -61,7 +61,8 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
   dxdot_dW_p[np.arange(0,N),:,np.arange(0,N)] = np.transpose(np.multiply(alphas*beta_tildes,np.multiply(sigmas,dc_dw_p)))
   dydot_dW_p = np.zeros([M,N,N])
 
-  drdot_dW_n = np.zeros([N,N])  # Compute how the rhs of system changes with respect to each strategy parameter
+  drdot_dW_n = np.zeros([N,N])
+  '''
   drdot_dF = -phi*np.multiply(np.reshape(psis,(1,1,N)),np.multiply(de_dg,dg_dF))
   dxdot_dF = np.zeros([N,N,M,N])
   dxdot_dF[np.arange(0,N),:,:,np.arange(0,N)] = np.transpose(np.multiply(
@@ -86,88 +87,7 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
   dydot_dW_p = np.zeros([M,N,N])
 
   drdot_dW_n = np.zeros([N,N])
-  dxdot_dW_n = np.zeros([N,N,N])
-  dxdot_dW_n[np.arange(0,N),:,np.arange(0,N)] = np.transpose(np.multiply(-alphas*etas,np.multiply(lambdas,dc_dw_n)))
-  dydot_dW_n = np.zeros([M,N,N])
-
-  drdot_dK_p = np.zeros([N,M])
-  dxdot_dK_p = np.zeros([N,N,M])
-  dydot_dK_p = np.zeros([M,N,M])
-  # result is mxn
-  dydot_dK_p[np.arange(0,M),:,np.arange(0,M)] = np.transpose(np.multiply(mus*rhos,di_dK_p))
-
-  drdot_dK_n = np.zeros([N,M])
-  dxdot_dK_n = np.zeros([N,N,M])
-  dydot_dK_n = np.zeros([M,N,M])
-  dydot_dK_n[np.arange(0,M),:,np.arange(0,M)] = np.transpose(np.multiply(-mus*thetas,di_dK_n))
-
-  drdot_dDjm = np.zeros([N,M,M])
-  dxdot_dDjm = np.zeros([N,N,M,M])
-  dydot_dDjm = np.zeros([M,N,M,M]) # mxnxjxl
-  # case for the gov org being transferred to (m=l), result is mxnxj
-  dydot_dDjm[np.diag_indices(M,1),:,:,np.diag_indices(M,1)] = np.transpose(np.multiply(mus*rho_bars,np.multiply(omegas,dt_dD_jm)),(1,0,2)) # eq ___, mxnxj
-  # case for the gov org transferring (m=j), result is mxnxl
-#  print(np.shape(np.transpose(-mus*np.squeeze(theta_bars))))
-#  print(np.shape(np.transpose(np.multiply(epsilons,dt_dD_jm),(2,0,1))))
-#  print(np.shape(dydot_dDjm[np.diag_indices(M,1),:,np.diag_indices(M,1),:]))
-  dydot_dDjm[np.diag_indices(M,1),:,np.diag_indices(M,1),:] = np.multiply(np.reshape(np.transpose(-mus*np.squeeze(theta_bars)),(M,1,1)),np.transpose(np.multiply(epsilons,dt_dD_jm),(2,0,1))) # eq __, mxnxl
-
-  ## Compute how the steady state of the system changes with respect to each strategy parameter
-  # dSdot_dF == how steady state changes wrt F, packed into one variable
-  dSdot_dF = np.concatenate((np.broadcast_to(drdot_dF, (1,N,M,N)), dxdot_dF, dydot_dF), axis=0)
-  dSdot_dF = dSdot_dF.reshape(T, (N)**2*M)
-  # do the actual computation
-  dSS_dF = -J_inv @ dSdot_dF
-  # unpack
-  dR_dF = dSS_dF.reshape(T,N,M,N)[0]
-  dX_dF = dSS_dF.reshape(T,N,M,N)[1:N+1]
-  dY_dF = dSS_dF.reshape(T,N,M,N)[N+1:N+1+M]
-
-  dSdot_dH = np.concatenate((np.broadcast_to(drdot_dH,(1,N,M,N)),dxdot_dH,dydot_dH), axis=0)
-  dSdot_dH = dSdot_dH.reshape(T,(N)**2*M)
-  dSS_dH = -J_inv @ dSdot_dH
-  dR_dH = dSS_dH.reshape(T,N,M,N)[0]
-  dX_dH = dSS_dH.reshape(T,N,M,N)[1:N+1]
-  dY_dH = dSS_dH.reshape(T,N,M,N)[N+1:N+1+M]
-
-  dSdot_dW_p = np.concatenate((np.broadcast_to(drdot_dW_p,(1,N,N)),dxdot_dW_p,dydot_dW_p), axis=0)
-  dSdot_dW_p = dSdot_dW_p.reshape(T,(N)**2)
-  dSS_dW_p = -J_inv @ dSdot_dW_p
-  dSS_dW_p = dSS_dW_p.reshape(T,N,N)
-  dR_dW_p = dSS_dW_p.reshape(T,N,N)[0]
-  dX_dW_p = dSS_dW_p.reshape(T,N,N)[1:N+1]
-  dY_dW_p = dSS_dW_p.reshape(T,N,N)[N+1:N+1+M]
-
-  dSdot_dW_n = np.concatenate((np.broadcast_to(drdot_dW_n,(1,N,N)),dxdot_dW_n,dydot_dW_n), axis=0)
-  dSdot_dW_n = dSdot_dW_n.reshape(T,(N)**2)
-  dSS_dW_n = -J_inv @ dSdot_dW_n
-  dSS_dW_n = dSS_dW_n.reshape(T,N,N)
-  dR_dW_n = dSS_dW_n.reshape(T,N,N)[0]
-  dX_dW_n = dSS_dW_n.reshape(T,N,N)[1:N+1]
-  dY_dW_n = dSS_dW_n.reshape(T,N,N)[N+1:N+1+M]
-
-  dSdot_dK_p = np.concatenate((np.broadcast_to(drdot_dK_p,(1,N,M)),dxdot_dK_p,dydot_dK_p), axis=0)
-  dSdot_dK_p = dSdot_dK_p.reshape(T,(N)*M)
-  dSS_dK_p = -J_inv @ dSdot_dK_p
-  dSS_dK_p = dSS_dK_p.reshape(T,N,M)
-  dR_dK_p = dSS_dK_p.reshape(T,N,M)[0]
-  dX_dK_p = dSS_dK_p.reshape(T,N,M)[1:N+1]
-  dY_dK_p = dSS_dK_p.reshape(T,N,M)[N+1:N+1+M]
-
-  dSdot_dK_n = np.concatenate((np.broadcast_to(drdot_dK_n,(1,N,M)),dxdot_dK_n,dydot_dK_n), axis=0)
-  dSdot_dK_n = dSdot_dK_n.reshape(T,(N)*M)
-  dSS_dK_n = -J_inv @ dSdot_dK_n
-  dSS_dK_n = dSS_dK_n.reshape(T,N,M)
-  dR_dK_n = dSS_dK_n.reshape(T,N,M)[0]
-  dX_dK_n = dSS_dK_n.reshape(T,N,M)[1:N+1]
-  dY_dK_n = dSS_dK_n.reshape(T,N,M)[N+1:N+1+M]
-
-  dSdot_dDjm = np.concatenate((np.broadcast_to(drdot_dDjm,(1,N,M,M)),dxdot_dDjm,dydot_dDjm), axis=0)
-  dSdot_dDjm = dSdot_dDjm.reshape(T,(N)*M**2)
-  dSS_dDjm = -np.linalg.inv(J) @ dSdot_dDjm
-  dR_dDjm = dSS_dDjm.reshape(T,N,M,M)[0]
-  dX_dDjm = dSS_dDjm.reshape(T,N,M,M)[1:N+1]
-  dY_dDjm = dSS_dDjm.reshape(T,N,M,M)[N+1:N+1+M]
+  '''
   dxdot_dW_n = np.zeros([N,N,N])
   dxdot_dW_n[np.arange(0,N),:,np.arange(0,N)] = np.transpose(np.multiply(-alphas*etas,np.multiply(lambdas,dc_dw_n)))
   dydot_dW_n = np.zeros([M,N,N])
@@ -190,7 +110,6 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
   dydot_dDjm[np.diag_indices(M,1),:,:,np.diag_indices(M,1)] = np.transpose(np.multiply(mus*rho_bars,np.multiply(omegas,dt_dD_jm)),(1,0,2)) # eq ___, mxnxj
   # case for the gov org transferring (m=j), result is mxnxl
   dydot_dDjm[np.diag_indices(M,1),:,np.diag_indices(M,1),:] = np.multiply(np.reshape(np.transpose(-mus*np.squeeze(theta_bars)),(M,1,1)),np.transpose(np.multiply(epsilons,dt_dD_jm),(2,0,1))) # eq __, mxnxl
-
 
   ## Compute how the steady state of the system changes with respect to each strategy parameter
   # dSdot_dF == how steady state changes wrt F, packed into one variable
@@ -248,7 +167,88 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
   dR_dDjm = dSS_dDjm.reshape(T,N,M,M)[0]
   dX_dDjm = dSS_dDjm.reshape(T,N,M,M)[1:N+1]
   dY_dDjm = dSS_dDjm.reshape(T,N,M,M)[N+1:N+1+M]
+  '''
+  dxdot_dW_n = np.zeros([N,N,N])
+  dxdot_dW_n[np.arange(0,N),:,np.arange(0,N)] = np.transpose(np.multiply(-alphas*etas,np.multiply(lambdas,dc_dw_n)))
+  dydot_dW_n = np.zeros([M,N,N])
 
+  drdot_dK_p = np.zeros([N,M])
+  dxdot_dK_p = np.zeros([N,N,M])
+  dydot_dK_p = np.zeros([M,N,M])
+  # result is mxn
+  dydot_dK_p[np.arange(0,M),:,np.arange(0,M)] = np.transpose(np.multiply(mus*rhos,di_dK_p))
+
+  drdot_dK_n = np.zeros([N,M])
+  dxdot_dK_n = np.zeros([N,N,M])
+  dydot_dK_n = np.zeros([M,N,M])
+  dydot_dK_n[np.arange(0,M),:,np.arange(0,M)] = np.transpose(np.multiply(-mus*thetas,di_dK_n))
+
+  drdot_dDjm = np.zeros([N,M,M])
+  dxdot_dDjm = np.zeros([N,N,M,M])
+  dydot_dDjm = np.zeros([M,N,M,M]) # mxnxjxl
+  # case for the gov org being transferred to (m=l), result is mxnxj
+  dydot_dDjm[np.diag_indices(M,1),:,:,np.diag_indices(M,1)] = np.transpose(np.multiply(mus*rho_bars,np.multiply(omegas,dt_dD_jm)),(1,0,2)) # eq ___, mxnxj
+  # case for the gov org transferring (m=j), result is mxnxl
+  dydot_dDjm[np.diag_indices(M,1),:,np.diag_indices(M,1),:] = np.multiply(np.reshape(np.transpose(-mus*np.squeeze(theta_bars)),(M,1,1)),np.transpose(np.multiply(epsilons,dt_dD_jm),(2,0,1))) # eq __, mxnxl
+  '''
+  '''
+  ## Compute how the steady state of the system changes with respect to each strategy parameter
+  # dSdot_dF == how steady state changes wrt F, packed into one variable
+  dSdot_dF = np.concatenate((np.broadcast_to(drdot_dF, (1,N,M,N)), dxdot_dF, dydot_dF), axis=0)
+  dSdot_dF = dSdot_dF.reshape(T, (N)**2*M)
+  # do the actual computation
+  dSS_dF = -J_inv @ dSdot_dF
+  # unpack
+  dR_dF = dSS_dF.reshape(T,N,M,N)[0]
+  dX_dF = dSS_dF.reshape(T,N,M,N)[1:N+1]
+  dY_dF = dSS_dF.reshape(T,N,M,N)[N+1:N+1+M]
+
+  dSdot_dH = np.concatenate((np.broadcast_to(drdot_dH,(1,N,M,N)),dxdot_dH,dydot_dH), axis=0)
+  dSdot_dH = dSdot_dH.reshape(T,(N)**2*M)
+  dSS_dH = -J_inv @ dSdot_dH
+  dR_dH = dSS_dH.reshape(T,N,M,N)[0]
+  dX_dH = dSS_dH.reshape(T,N,M,N)[1:N+1]
+  dY_dH = dSS_dH.reshape(T,N,M,N)[N+1:N+1+M]
+
+  dSdot_dW_p = np.concatenate((np.broadcast_to(drdot_dW_p,(1,N,N)),dxdot_dW_p,dydot_dW_p), axis=0)
+  dSdot_dW_p = dSdot_dW_p.reshape(T,(N)**2)
+  dSS_dW_p = -J_inv @ dSdot_dW_p
+  dSS_dW_p = dSS_dW_p.reshape(T,N,N)
+  dR_dW_p = dSS_dW_p.reshape(T,N,N)[0]
+  dX_dW_p = dSS_dW_p.reshape(T,N,N)[1:N+1]
+  dY_dW_p = dSS_dW_p.reshape(T,N,N)[N+1:N+1+M]
+
+  dSdot_dW_n = np.concatenate((np.broadcast_to(drdot_dW_n,(1,N,N)),dxdot_dW_n,dydot_dW_n), axis=0)
+  dSdot_dW_n = dSdot_dW_n.reshape(T,(N)**2)
+  dSS_dW_n = -J_inv @ dSdot_dW_n
+  dSS_dW_n = dSS_dW_n.reshape(T,N,N)
+  dR_dW_n = dSS_dW_n.reshape(T,N,N)[0]
+  dX_dW_n = dSS_dW_n.reshape(T,N,N)[1:N+1]
+  dY_dW_n = dSS_dW_n.reshape(T,N,N)[N+1:N+1+M]
+
+  dSdot_dK_p = np.concatenate((np.broadcast_to(drdot_dK_p,(1,N,M)),dxdot_dK_p,dydot_dK_p), axis=0)
+  dSdot_dK_p = dSdot_dK_p.reshape(T,(N)*M)
+  dSS_dK_p = -J_inv @ dSdot_dK_p
+  dSS_dK_p = dSS_dK_p.reshape(T,N,M)
+  dR_dK_p = dSS_dK_p.reshape(T,N,M)[0]
+  dX_dK_p = dSS_dK_p.reshape(T,N,M)[1:N+1]
+  dY_dK_p = dSS_dK_p.reshape(T,N,M)[N+1:N+1+M]
+
+  dSdot_dK_n = np.concatenate((np.broadcast_to(drdot_dK_n,(1,N,M)),dxdot_dK_n,dydot_dK_n), axis=0)
+  dSdot_dK_n = dSdot_dK_n.reshape(T,(N)*M)
+  dSS_dK_n = -J_inv @ dSdot_dK_n
+  dSS_dK_n = dSS_dK_n.reshape(T,N,M)
+  dR_dK_n = dSS_dK_n.reshape(T,N,M)[0]
+  dX_dK_n = dSS_dK_n.reshape(T,N,M)[1:N+1]
+  dY_dK_n = dSS_dK_n.reshape(T,N,M)[N+1:N+1+M]
+
+  dSdot_dDjm = np.concatenate((np.broadcast_to(drdot_dDjm,(1,N,M,M)),dxdot_dDjm,dydot_dDjm), axis=0)
+  dSdot_dDjm = dSdot_dDjm.reshape(T,(N)*M**2)
+  dSS_dDjm = -J_inv @ dSdot_dDjm
+  dR_dDjm = dSS_dDjm.reshape(T,N,M,M)[0]
+  dX_dDjm = dSS_dDjm.reshape(T,N,M,M)[1:N+1]
+  dY_dDjm = dSS_dDjm.reshape(T,N,M,M)[N+1:N+1+M]
+  '''
   # calculate gradients of objective function for one actor
   # for extraction
   # n's objective, l's strategy (same for resource users) n,l used to be i,j
@@ -282,7 +282,7 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
         ,axis=0)
 
     grad_e_W = np.zeros((1,N))
-    grad_e_W[W[l]>0] = de_dr[0,n] * dR_dW_p[l] + np.sum(np.multiply(np.reshape(de_dg[0,:,n]*dg_dy[:,n], (M,1)), dY_dW_p[:,l])
+    grad_e_W[W[l]>=0] = de_dr[0,n] * dR_dW_p[l] + np.sum(np.multiply(np.reshape(de_dg[0,:,n]*dg_dy[:,n], (M,1)), dY_dW_p[:,l])
               + np.sum(
                   np.multiply(  # Both factors need to be kmi
                       np.reshape(
@@ -306,7 +306,7 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
         ,axis=0)
 
     grad_e_K = np.zeros((1,M))
-    grad_e_K[K_p[l]>0] = de_dr[0,n] * dR_dK_p[l] + np.sum(np.multiply(np.reshape(de_dg[0,:,n]*dg_dy[:,n], (M,1)), dY_dK_p[:,l])
+    grad_e_K[K_p[l]>=0] = de_dr[0,n] * dR_dK_p[l] + np.sum(np.multiply(np.reshape(de_dg[0,:,n]*dg_dy[:,n], (M,1)), dY_dK_p[:,l])
             + np.sum(
                 np.multiply(  # Both factors need to be kmji
                     np.reshape(np.multiply(de_dg[:,:,n],dg_dF[:,:,n]*F[:,:,n]), (N,M,1)),
@@ -314,6 +314,7 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
                 )
             ,axis=0)  # Sum over k
         ,axis=0)
+
 
     grad_e_K[K_p[l]<0] = de_dr[0,n] * dR_dK_n[l] + np.sum(np.multiply(np.reshape(de_dg[0,:,n]*dg_dy[:,n], (M,1)), dY_dK_n[:,l])
             + np.sum(
@@ -355,7 +356,7 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
     grad_a_H[:,n] += np.multiply(da_dp[0,:,n],dp_dH[n,:,n])
 
     grad_a_W = np.zeros((0,N))
-    grad_a_W[W[l]>0] = da_dr[0,n]*dR_dW_p[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1)),dY_dW_p[:,l])
+    grad_a_W[W[l]>=0] = da_dr[0,n]*dR_dW_p[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1)),dY_dW_p[:,l])
           + np.sum(
               np.multiply(
                 np.reshape(np.multiply(da_dp[:,:,n],dp_dH[:,:,n]*H[:,:,n]),(N,M,1)),
@@ -372,7 +373,7 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
           ,axis=0)
 
     grad_a_K = np.zeros((0,M))
-    grad_a_K[K_p[l]>0] = da_dr[0,n] * dR_dK_p[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1)),dY_dK_p[:,l])
+    grad_a_K[K_p[l]>=0] = da_dr[0,n] * dR_dK_p[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1)),dY_dK_p[:,l])
           + np.sum(
               np.multiply(
                 np.reshape(np.multiply(da_dp[:,:,n],dp_dH[:,:,n]*H[:,:,n]),(N,M,1)),
@@ -454,7 +455,7 @@ def grad_descent_constrained(initial_point, max_steps, n, l, J, N,K,M,T,
 
   # figure out which plane to project gradient onto
   plane = np.sign(x)
-  plane[abs(x)<0.001] = np.sign(grad[abs(x)<0.001])
+  plane[abs(x)<0.0001] = np.sign(grad[abs(x)<0.0001])
   plane[-(M**2):] = 1
 
   # Project gradient onto the plane sum(efforts) == 1
@@ -467,17 +468,20 @@ def grad_descent_constrained(initial_point, max_steps, n, l, J, N,K,M,T,
   while grad_mag > 1e-5 and num_steps < max_steps:
     # Follow the projected gradient for a fixed step size alpha
     x = x + alpha*grad
-    x /= np.linalg.norm(x) # Normalize to be sure (get some errors without this)
+#    print('banana:', end = ' ')
+#    print(np.sum(x*plane))
+    x /= np.sum(x*plane) # Normalize to be sure (get some errors without this)
 
     # If strategy does not have all efforts >= 0, project onto space of legal strategies
     if np.any(x*plane < 0):
       try:
         ub = np.sum(abs(x)) #np.sum(abs(x[x*plane>0]))
-        print()
-        print(np.sum(np.maximum(x*plane - 0, 0)) - 1)
-        print(x*plane)
-        print(np.sum(x*plane))
-        print(np.sum(np.maximum(x*plane - ub, 0)) - 1)
+#        print()
+#        print(np.sum(np.maximum(x*plane - 0, 0)) - 1)
+#        print(x)
+#        print(plane)
+#        print(np.sum(x*plane))
+#        print(np.sum(np.maximum(x*plane - ub, 0)) - 1)
         mu = optimize.brentq(boundary_projection, 0, ub, args=(x, plane))
       except:
         print('bisection bounds did not work')
@@ -485,13 +489,10 @@ def grad_descent_constrained(initial_point, max_steps, n, l, J, N,K,M,T,
       x = plane * np.maximum(x*plane - mu, 0)
     strategies.append(x)
 
-    # figure out which plane to project gradient onto
-    plane = np.sign(x)
-    plane[abs(x)<0.001] = np.sign(grad[abs(x)<0.001])
-    plane[-(M**2):] = 1 # for parameters that can only be positive, set to positive
+
+    """
     print(raw_grad[-1])
     print(projected_grad[-1])
-    """
     print() # for debugging
     print('raw')
     print(raw_grad[-1]) # for debugging
@@ -508,6 +509,11 @@ def grad_descent_constrained(initial_point, max_steps, n, l, J, N,K,M,T,
                           phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
                           F,H,W,K_p,D_jm)
     raw_grad.append(grad) # for debugging
+
+    # figure out which plane to project gradient onto
+    plane = np.sign(x)
+    plane[abs(x)<0.001] = np.sign(grad[abs(x)<0.001])
+    plane[-(M**2):] = 1 # for parameters that can only be positive, set to positive
 
     # Project gradient onto the plane abs(params)=1
     grad = grad - np.dot(grad, plane)*plane/sum(abs(plane))
