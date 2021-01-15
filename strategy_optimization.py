@@ -74,15 +74,16 @@ def grad_descent_constrained(initial_point, max_steps, n, l, J, N,K,M,T,
     x /= np.sum(x*plane) # Normalize to be sure (get some errors without this)
 
     # If strategy does not have all efforts >= 0, project onto space of legal strategies
-    if np.any(x*plane < 0):
+    if np.any(x*plane < -0.01):
       try:
         ub = np.sum(abs(x)) #np.sum(abs(x[x*plane>0]))
-#        print()
-#        print(np.sum(np.maximum(x*plane - 0, 0)) - 1)
-#        print(x)
-#        print(plane)
-#        print(np.sum(x*plane))
-#        print(np.sum(np.maximum(x*plane - ub, 0)) - 1)
+        print()
+        print('banana')
+        print(np.sum(np.maximum(x*plane - 0, 0)) - 1)
+        print(x)
+        print(plane)
+        print(np.sum(x*plane))
+        print(np.sum(np.maximum(x*plane - ub, 0)) - 1)
         mu = optimize.brentq(boundary_projection, 0, ub, args=(x, plane))
       except:
         print('bisection bounds did not work')

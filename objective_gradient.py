@@ -85,13 +85,13 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
   dydot_dDjm[np.diag_indices(M,1),:,np.diag_indices(M,1),:] = np.multiply(np.reshape(np.transpose(-mus*np.squeeze(theta_bars)),(M,1,1)),np.transpose(np.multiply(epsilons,dt_dD_jm),(2,0,1))) # eq __, mxnxl
 
   ## Compute how the steady state of the system changes with respect to each strategy parameter
-  dR_dF, dX_dF, dY_dF = multiply_by_inverse_jacobian(drdot_dF, dxdot_dF, dydot_dF, J_inv)
-  dR_dH, dX_dH, dY_dH = multiply_by_inverse_jacobian(drdot_dH, dxdot_dH, dydot_dH, J_inv)
-  dR_dW_p, dX_dW_p, dY_dW_p = multiply_by_inverse_jacobian(drdot_dW_p, dxdot_dW_p, dydot_dW_p, J_inv)
-  dR_dW_n, dX_dW_n, dY_dW_n = multiply_by_inverse_jacobian(drdot_dW_n, dxdot_dW_n, dydot_dW_n, J_inv)
-  dR_dK_p, dX_dK_p, dY_dK_p = multiply_by_inverse_jacobian(drdot_dK_p, dxdot_dK_p, dydot_dK_p, J_inv)
-  dR_dK_n, dX_dK_n, dY_dK_n = multiply_by_inverse_jacobian(drdot_dK_n, dxdot_dK_n, dydot_dK_n, J_inv)
-  dR_dDjm, dX_dDjm, dY_dDjm = multiply_by_inverse_jacobian(drdot_dDjm, dxdot_dDjm, dydot_dDjm, J_inv)
+  dR_dF, dX_dF, dY_dF = multiply_by_inverse_jacobian(drdot_dF, dxdot_dF, dydot_dF, J_inv, T,N,M)
+  dR_dH, dX_dH, dY_dH = multiply_by_inverse_jacobian(drdot_dH, dxdot_dH, dydot_dH, J_inv, T,N,M)
+  dR_dW_p, dX_dW_p, dY_dW_p = multiply_by_inverse_jacobian(drdot_dW_p, dxdot_dW_p, dydot_dW_p, J_inv, T,N,M)
+  dR_dW_n, dX_dW_n, dY_dW_n = multiply_by_inverse_jacobian(drdot_dW_n, dxdot_dW_n, dydot_dW_n, J_inv, T,N,M)
+  dR_dK_p, dX_dK_p, dY_dK_p = multiply_by_inverse_jacobian(drdot_dK_p, dxdot_dK_p, dydot_dK_p, J_inv, T,N,M)
+  dR_dK_n, dX_dK_n, dY_dK_n = multiply_by_inverse_jacobian(drdot_dK_n, dxdot_dK_n, dydot_dK_n, J_inv, T,N,M)
+  dR_dDjm, dX_dDjm, dY_dDjm = multiply_by_inverse_jacobian(drdot_dDjm, dxdot_dDjm, dydot_dDjm, J_inv, T,N,M)
 
 
   # calculate gradients of objective function for one actor
@@ -253,29 +253,29 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
     # objective function gradient for RUs that extract and access the resource
     return np.concatenate(((grad_a_F + grad_e_F).flatten(),
                            (grad_a_H + grad_e_H).flatten(),
-                            grad_a_W + grad_e_W,
-                            grad_a_K + grad_e_K,
+                           (grad_a_W + grad_e_W).flatten(),
+                           (grad_a_K + grad_e_K).flatten(),
                            (grad_a_Djm + grad_e_Djm).flatten()))
   elif betas[0,n] > 0:
     # objective function gradient for extractors
     return np.concatenate((grad_e_F.flatten(),
                            grad_e_H.flatten(),
-                           grad_e_W,
-                           grad_e_K,
+                           grad_e_W.flatten(),
+                           grad_e_K.flatten(),
                            grad_e_Djm.flatten()))
   elif beta_hats[0,n] > 0:
     # objective function gradient for accessors
     return np.concatenate((grad_a_F.flatten(),
                            grad_a_H.flatten(),
-                           grad_a_W,
-                           grad_a_K,
+                           grad_a_W.flatten(),
+                           grad_a_K.flatten(),
                            grad_a_Djm.flatten()))
 
 
 
-def multiply_by_inverse_jacobian(drdot_dp, dxdot_dp, dydot_dp, J_inv):
+def multiply_by_inverse_jacobian(drdot_dp, dxdot_dp, dydot_dp, J_inv, T, N, M):
   # shape is the shape of strategy parameter p. For example, D_jm is (N,M,M).
-  shape = drdot_dp.shape()
+  shape = drdot_dp.shape
   # dSdot_dp == how steady state changes wrt p, packed into one variable
   dSdot_dp = np.concatenate(
                  (np.broadcast_to(drdot_dp, (1, *shape)),
@@ -283,16 +283,24 @@ def multiply_by_inverse_jacobian(drdot_dp, dxdot_dp, dydot_dp, J_inv):
                  dydot_dp),
              axis=0)
   
-  ####dSdot_dp = dSdot_dp.reshape(T, np.prod(shape))  # this should already be true
-  assert(dSdot_dp.shape == (T, np.prod(shape)))  # can remove this once it's sufficiently verified
+  dSdot_dp = dSdot_dp.reshape(T, np.prod(shape))  # this should already be true
   
   # do the actual computation
   dSS_dp = -J_inv @ dSdot_dp
   
   # unpack
-  dSS_dp = dSS_dp.reshape((1, *shape))
+  dSS_dp = dSS_dp.reshape((T, *shape))
   dR_dp = dSS_dp[0]
   dX_dp = dSS_dp[1:N+1]
   dY_dp = dSS_dp[N+1:N+1+M]
 
   return dR_dp, dX_dp, dY_dp
+"""
+  dSdot_dW_n = np.concatenate((np.broadcast_to(drdot_dW_n,(1,N,N)),dxdot_dW_n,dydot_dW_n), axis=0)
+  dSdot_dW_n = dSdot_dW_n.reshape(T,(N)**2)
+  dSS_dW_n = -J_inv @ dSdot_dW_n
+  dSS_dW_n = dSS_dW_n.reshape(T,N,N)
+  dR_dW_n = dSS_dW_n.reshape(T,N,N)[0]
+  dX_dW_n = dSS_dW_n.reshape(T,N,N)[1:N+1]
+  dY_dW_n = dSS_dW_n.reshape(T,N,N)[N+1:N+1+M]
+"""
