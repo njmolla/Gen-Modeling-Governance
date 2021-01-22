@@ -1,9 +1,8 @@
 import numpy as np
 from compute_J import determine_stability
-import csv
 from numba import jit
 
-
+@jit(nopython=True)
 def objective_grad(strategy, n, l, J, N,K,M,T,
     phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
     F,H,W,K_p,D_jm):
@@ -36,6 +35,7 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
   # Compute inverse Jacobian
   J_inv = np.linalg.inv(J)
 
+  #TO DO: This section doesn't need to be calculated every time (except for dxdot_dws)
   # Compute how the rhs of system changes with respect to each strategy parameter
   drdot_dF = -phi*np.multiply(np.reshape(psis,(1,1,N)),np.multiply(de_dg,dg_dF))
   dxdot_dF = np.zeros([N,N,M,N])
@@ -126,8 +126,8 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
             ,axis=0)  # Sum over k
         ,axis=0)
 
-    grad_e_W = np.zeros((1,N))
-    grad_e_W[W[l]>=0] = de_dr[0,n] * dR_dW_p[l] + np.sum(np.multiply(np.reshape(de_dg[0,:,n]*dg_dy[:,n], (M,1)), dY_dW_p[:,l])
+    grad_e_W = np.zeros((N))
+    grad_e_W_p = de_dr[0,n] * dR_dW_p[l] + np.sum(np.multiply(np.reshape(de_dg[0,:,n]*dg_dy[:,n], (M,1)), dY_dW_p[:,l])
               + np.sum(
                   np.multiply(  # Both factors need to be kmi
                       np.reshape(
@@ -141,7 +141,7 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
               ,axis=0)  # Sum over k
           ,axis=0)
 
-    grad_e_W[W[l]<0] =  de_dr[0,n] * dR_dW_n[l] + np.sum(np.multiply(np.reshape(de_dg[0,:,n]*dg_dy[:,n], (M,1)), dY_dW_n[:,l])
+    grad_e_W_n =  de_dr[0,n] * dR_dW_n[l] + np.sum(np.multiply(np.reshape(de_dg[0,:,n]*dg_dy[:,n], (M,1)), dY_dW_n[:,l])
             + np.sum(
                 np.multiply(  # Both factors need to be kmji
                     np.reshape(np.multiply(de_dg[:,:,n],dg_dF[:,:,n]*F[:,:,n]), (N,M,1)),
@@ -149,9 +149,11 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
                 )
             ,axis=0)  # Sum over k
         ,axis=0)
+    grad_e_W[W[l]>=0] = grad_e_W_p[W[l]>=0]
+    grad_e_W[W[l]<0] = grad_e_W_n[W[l]<0]
 
-    grad_e_K = np.zeros((1,M))
-    grad_e_K[K_p[l]>=0] = de_dr[0,n] * dR_dK_p[l] + np.sum(np.multiply(np.reshape(de_dg[0,:,n]*dg_dy[:,n], (M,1)), dY_dK_p[:,l])
+    grad_e_K = np.zeros((M))
+    grad_e_K_p = de_dr[0,n] * dR_dK_p[l] + np.sum(np.multiply(np.reshape(de_dg[0,:,n]*dg_dy[:,n], (M,1)), dY_dK_p[:,l])
             + np.sum(
                 np.multiply(  # Both factors need to be kmji
                     np.reshape(np.multiply(de_dg[:,:,n],dg_dF[:,:,n]*F[:,:,n]), (N,M,1)),
@@ -161,7 +163,7 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
         ,axis=0)
 
 
-    grad_e_K[K_p[l]<0] = de_dr[0,n] * dR_dK_n[l] + np.sum(np.multiply(np.reshape(de_dg[0,:,n]*dg_dy[:,n], (M,1)), dY_dK_n[:,l])
+    grad_e_K_n = de_dr[0,n] * dR_dK_n[l] + np.sum(np.multiply(np.reshape(de_dg[0,:,n]*dg_dy[:,n], (M,1)), dY_dK_n[:,l])
             + np.sum(
                 np.multiply(  # Both factors need to be kmji
                     np.reshape(np.multiply(de_dg[:,:,n],dg_dF[:,:,n]*F[:,:,n]), (N,M,1)),
@@ -169,6 +171,9 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
                 )
             ,axis=0)  # Sum over k
         ,axis=0)
+
+    grad_e_K[K_p[l]>=0] = grad_e_K_p[K_p[l]>=0]
+    grad_e_K[K_p[l]<0] = grad_e_K_n[K_p[l]<0]
 
     grad_e_Djm = de_dr[0,n] * dR_dDjm[l] + np.sum(np.multiply(np.reshape(de_dg[0,:,n]*dg_dy[:,n], (M,1,1)), dY_dDjm[:,l])
             + np.sum(
@@ -200,8 +205,8 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
 
     grad_a_H[:,n] += np.multiply(da_dp[0,:,n],dp_dH[n,:,n])
 
-    grad_a_W = np.zeros((0,N))
-    grad_a_W[W[l]>=0] = da_dr[0,n]*dR_dW_p[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1)),dY_dW_p[:,l])
+    grad_a_W = np.zeros(N)
+    grad_a_W_p = da_dr[0,n]*dR_dW_p[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1)),dY_dW_p[:,l])
           + np.sum(
               np.multiply(
                 np.reshape(np.multiply(da_dp[:,:,n],dp_dH[:,:,n]*H[:,:,n]),(N,M,1)),
@@ -209,7 +214,7 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
               ),axis=0)
           ,axis=0)
 
-    grad_a_W[W[l]<0] = da_dr[0,n] * dR_dW_n[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1)),dY_dW_n[:,l])
+    grad_a_W_n = da_dr[0,n] * dR_dW_n[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1)),dY_dW_n[:,l])
           + np.sum(
               np.multiply(
                 np.reshape(np.multiply(da_dp[:,:,n],dp_dH[:,:,n]*H[:,:,n]),(N,M,1)),
@@ -217,8 +222,11 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
               ),axis=0)
           ,axis=0)
 
-    grad_a_K = np.zeros((0,M))
-    grad_a_K[K_p[l]>=0] = da_dr[0,n] * dR_dK_p[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1)),dY_dK_p[:,l])
+    grad_a_W[W[l]>=0] = grad_a_W_p[W[l]>=0]
+    grad_a_W[W[l]<0] = grad_a_W_n[W[l]<0]
+
+    grad_a_K = np.zeros(M)
+    grad_a_K_p = da_dr[0,n] * dR_dK_p[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1)),dY_dK_p[:,l])
           + np.sum(
               np.multiply(
                 np.reshape(np.multiply(da_dp[:,:,n],dp_dH[:,:,n]*H[:,:,n]),(N,M,1)),
@@ -226,13 +234,17 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
               ),axis=0)
           ,axis=0)
 
-    grad_a_K[K_p[l]<0] =  da_dr[0,n] * dR_dK_n[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1)),dY_dK_n[:,l])
+    grad_a_K_n =  da_dr[0,n] * dR_dK_n[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1)),dY_dK_n[:,l])
           + np.sum(
               np.multiply(
                 np.reshape(np.multiply(da_dp[:,:,n],dp_dH[:,:,n]*H[:,:,n]),(N,M,1)),
                 dX_dK_n[:,l:l+1,:]
               ),axis=0)
           ,axis=0)
+
+    grad_a_K[K_p[l]>=0] = grad_a_K_p[K_p[l]>=0]
+    grad_a_K[K_p[l]<0] = grad_a_K_n[K_p[l]<0]
+
 
     grad_a_Djm = da_dr[0,n] * dR_dDjm[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1,1)),dY_dDjm[:,l])
           + np.sum(
@@ -282,12 +294,12 @@ def multiply_by_inverse_jacobian(drdot_dp, dxdot_dp, dydot_dp, J_inv, T, N, M):
                  dxdot_dp,
                  dydot_dp),
              axis=0)
-  
+
   dSdot_dp = dSdot_dp.reshape(T, np.prod(shape))  # this should already be true
-  
+
   # do the actual computation
   dSS_dp = -J_inv @ dSdot_dp
-  
+
   # unpack
   dSS_dp = dSS_dp.reshape((T, *shape))
   dR_dp = dSS_dp[0]

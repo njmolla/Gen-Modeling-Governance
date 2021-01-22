@@ -140,11 +140,11 @@ def sample(N1,N2,N3,K,M,T, C1,C2):
     if is_connected == False:
       continue
 
-#    # find nash equilibrium strategies
-#    F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm, sigmas, lambdas, converged = nash_equilibrium(2000, J, N,K,M,T,
-#        phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-#        F_p,F_n,H_p,H_n,W_p,W_n,K_p,K_n,D_jm)
-    converged = True
+    # find nash equilibrium strategies
+    F,H,W,K_p,D_jm, sigmas, lambdas, converged = nash_equilibrium(2000, J, N,K,M,T,
+        phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
+        F,H,W,K_p,D_jm)
+    #converged = True
 
     # ------------------------------------------------------------------------
     # See if system is stable and if it is weakly connected
@@ -230,14 +230,14 @@ def run_once(N1,N2,N3,K,M,T, C1,C2):
 #      + np.size(W_p) + np.size(W_n) + np.size(K_p) + np.size(K_n) + np.size(omegas)
 #      + np.size(epsilons) + np.size(D_jm))
 
-  return (stability, J,
+  return (stability, J, converged,
           phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
           F,H,W,K_p,D_jm)
 
 
 def main():
   # Size of system
-  N1 = 1 # number of resource users that benefit from extraction only
+  N1 = 2 # number of resource users that benefit from extraction only
   N2 = 0 # number of users with both extractive and non-extractive use
   N3 = 0  # number of users with only non-extractive use
   K = 0 # number of bridging orgs
@@ -253,7 +253,7 @@ def main():
 
 
 if __name__ == "__main__":
-  (stability, J,
+  (stability, J, converged,
       phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
       F,H,W,K_p,D_jm) = main()
 
