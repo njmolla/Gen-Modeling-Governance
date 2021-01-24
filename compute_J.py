@@ -2,7 +2,7 @@ import numpy as np
 from numba import jit
 
 
-@jit(nopython=True)
+#@jit(nopython=True)
 def determine_stability(N,K,M,T,
 	  phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
 	  F,H,W,K_p,D_jm):
@@ -10,7 +10,7 @@ def determine_stability(N,K,M,T,
   # --------------------------------------------------------------------------
   # Compute Jacobian (vectorized)
   # --------------------------------------------------------------------------
-  J = np.zeros([T,T])
+  J = np.zeros((T,T))
   # dr•/dr
   J[0,0] = phi*(ds_dr - np.sum(np.squeeze(psis*de_dr)))
                                             # 1xn
@@ -95,7 +95,7 @@ def determine_stability(N,K,M,T,
   # Compute the eigenvalues of the Jacobian
   # --------------------------------------------------------------------------
   eigvals = np.linalg.eigvals(J)
-  if all(eigvals.real < 10e-5):  # stable if real part of eigenvalues is negative
+  if np.all(eigvals.real < 10e-5):  # stable if real part of eigenvalues is negative
     stability = True
   else:
     stability = False  # unstable if real part is positive, inconclusive if 0

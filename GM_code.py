@@ -82,14 +82,14 @@ def sample(N1,N2,N3,K,M,T, C1,C2):
     # Initialize exponent parameters
     # ------------------------------------------------------------------------
     ds_dr = np.random.rand(1)*2  # 0-2 $
-    de_dr = np.random.rand(1,N)  # $
+    de_dr = np.zeros((1,N))#np.zeros((1,N)) #np.random.rand(1,N)  # $
     de_dg = np.zeros((1,M,N))  # $
     links = np.random.rand(N1+N2) < C1
     # resample until at least one gov-extraction interaction
     while np.count_nonzero(links) == 0:
       links = np.random.rand(N1+N2) < C1
     de_dg[:,:,0:N1+N2][:,:,links] = np.random.uniform(-1,1,(1,M,sum(links)))
-    dg_dF = np.random.uniform(0,2,(N,M,N))  # dg_m,n/(dF_i,m,n * x_i) is ixmxn $###############
+    dg_dF = np.random.uniform(0,2,(N,M,N))  # dg_m,n/(dF_i,m,n * x_i) is ixmxn $
                                             # should be positive!
     dg_dy = np.random.rand(M,N)*2 # $
     dp_dy = np.random.rand(M,N)*2 # $
@@ -106,8 +106,8 @@ def sample(N1,N2,N3,K,M,T, C1,C2):
     dc_dw_n = np.random.uniform(0,2,(N,N)) #dc_dw_n_i,n is ixn $
     dc_dw_n[indices,indices] = 0
     dl_dx = np.random.rand(N)
-    di_dK_p = np.random.uniform(0,2,(N,M))
-    di_dK_n = np.random.uniform(0,2,(N,M))
+    di_dK_p = np.zeros((N,M))#np.random.uniform(0,2,(N,M))
+    di_dK_n = np.zeros((N,M))#np.random.uniform(0,2,(N,M))
     di_dy_p = np.random.rand(1,M)  # $
     di_dy_n = np.random.rand(1,M)  # $
     dt_dD_jm = np.random.uniform(0,2,(N,M,M))  # dt_j->m/d(D_i,j->m * x_i) is ixmxj  $
@@ -217,7 +217,7 @@ def run_once(N1,N2,N3,K,M,T, C1,C2):
   '''
   Do a single run and return more detailed output.
   '''
-  np.random.seed(2)
+  np.random.seed(0)
   (stability, J, converged,
       phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
       F,H,W,K_p,D_jm) = sample(N1,N2,N3,K,M,T,C1,C2)
@@ -237,7 +237,7 @@ def run_once(N1,N2,N3,K,M,T, C1,C2):
 
 def main():
   # Size of system
-  N1 = 2 # number of resource users that benefit from extraction only
+  N1 = 1 # number of resource users that benefit from extraction only
   N2 = 0 # number of users with both extractive and non-extractive use
   N3 = 0  # number of users with only non-extractive use
   K = 0 # number of bridging orgs

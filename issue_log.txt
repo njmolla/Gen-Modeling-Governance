@@ -12,15 +12,18 @@ Issue log:
    - switched to strategies that can be positive or negative in each components (rather than having those separated)
 
 Debuggging strategy optimization:
+All cases are with one extractor and one gov org.
 
-
-Case 1: works now
+Case 1:
 Seed = 0,
 Dg_dF = 0.04
 De_dg = -0.8257414
 di_dK_p = 1.88933783
 di_dK_n = 1.04369664
-Cycles between K+ and K- (perhaps because exponent parameters are similar). Should be K-.
+[0.31472661, 0.        , 0.        , 0.37061054, 0.31466285]
+[0.00668866, 0.21986146, 0.21788945, 0.21961175, 0.33594868] with de_dr=0
+[0.42160309, 0.17918128, 0.        , 0.20082636, 0.19838927] with di_dK_p and di_dK_n=0
+[0.20067277, 0.25006934, 0.00826614, 0.27171442, 0.26927733] with both
 
 Case 2:
 Seed = 1
