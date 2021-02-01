@@ -12,6 +12,7 @@ Issue log:
    - switched to strategies that can be positive or negative in each components (rather than having those separated)
 
 Debuggging strategy optimization:
+  
 All cases are with one extractor and one gov org.
 
 Case 1:

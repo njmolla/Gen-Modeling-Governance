@@ -7,10 +7,13 @@ x = np.arange(10000).reshape(100, 100)
 
 @jit(nopython=True)
 def go_fast(a): # Function is compiled and runs in machine code
-    trace = 0.0
-    for i in range(a.shape[0]):
-        trace += np.tanh(a[i, i])
-    return a + trace
+  b = 2
+  product = a*b
+  product[product>5000] = 1000
+#    trace = 0.0
+#    for i in range(a.shape[0]):
+#        trace += np.tanh(a[i, i])
+  return product
 
 # DO NOT REPORT THIS... COMPILATION TIME IS INCLUDED IN THE EXECUTION TIME!
 start = time.time()

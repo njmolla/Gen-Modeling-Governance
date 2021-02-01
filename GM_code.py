@@ -52,10 +52,10 @@ def sample(N1,N2,N3,K,M,T, C1,C2):
 
     mus = np.random.rand(1,M) # $
 
-    rhos = np.random.rand(1,M) # $ should be 1 for M=1 based on rho_bar
+    rhos = np.random.uniform(0,0.3,(1,M)) # $ should be 1 for M=1 based on rho_bar
     rho_bars = np.reshape(1 - rhos,(1,M,1)) # want to be 1,m,1$
 
-    omegas = np.zeros([1,M,M]) # omegas_m,j is 1xjxm, want to sum to 1 along m
+    omegas = np.zeros((1,M,M)) # omegas_m,j is 1xjxm, want to sum to 1 along m
 
     if M != 1:
         links = (np.random.rand(1,M,M) < C2) # gov org to  gov org connectance
@@ -82,7 +82,7 @@ def sample(N1,N2,N3,K,M,T, C1,C2):
     # Initialize exponent parameters
     # ------------------------------------------------------------------------
     ds_dr = np.random.rand(1)*2  # 0-2 $
-    de_dr = np.zeros((1,N))#np.zeros((1,N)) #np.random.rand(1,N)  # $
+    de_dr = np.random.rand(1,N)#np.zeros((1,N)) #np.random.rand(1,N)  # $
     de_dg = np.zeros((1,M,N))  # $
     links = np.random.rand(N1+N2) < C1
     # resample until at least one gov-extraction interaction
@@ -105,14 +105,19 @@ def sample(N1,N2,N3,K,M,T, C1,C2):
     dc_dw_p[indices,indices] = 0
     dc_dw_n = np.random.uniform(0,2,(N,N)) #dc_dw_n_i,n is ixn $
     dc_dw_n[indices,indices] = 0
-    dl_dx = np.random.rand(N)
-    di_dK_p = np.zeros((N,M))#np.random.uniform(0,2,(N,M))
-    di_dK_n = np.zeros((N,M))#np.random.uniform(0,2,(N,M))
+    dl_dx = np.random.uniform(0.8,1,(N)) #only converges if this is >=0.8
+    di_dK_p = np.random.uniform(0,2,(N,M))#np.zeros((N,M))#np.random.uniform(0,2,(N,M))
+    di_dK_n = np.random.uniform(0,2,(N,M))#np.zeros((N,M))#np.random.uniform(0,2,(N,M))
     di_dy_p = np.random.rand(1,M)  # $
     di_dy_n = np.random.rand(1,M)  # $
-    dt_dD_jm = np.random.uniform(0,2,(N,M,M))  # dt_j->m/d(D_i,j->m * x_i) is ixmxj  $
-    dtjm_dym = np.random.rand(M,M)  # 1xmxj
-    dtmj_dym = np.random.uniform(-1,0,(1,M,M))  # 1xjxm
+    if M==1:
+      dt_dD_jm = np.zeros((N,M,M))  # dt_j->m/d(D_i,j->m * x_i) is ixmxj  $
+      dtjm_dym = np.zeros((M,M))  # 1xmxj
+      dtmj_dym = np.zeros((1,M,M))
+    else:
+      dt_dD_jm = np.random.uniform(0,2,(N,M,M))  # dt_j->m/d(D_i,j->m * x_i) is ixmxj  $
+      dtjm_dym = np.random.rand(M,M)  # 1xmxj
+      dtmj_dym = np.random.uniform(-1,0,(1,M,M))  # 1xjxm
 
 
     # ------------------------------------------------------------------------
@@ -141,10 +146,10 @@ def sample(N1,N2,N3,K,M,T, C1,C2):
       continue
 
     # find nash equilibrium strategies
-    F,H,W,K_p,D_jm, sigmas, lambdas, converged = nash_equilibrium(2000, J, N,K,M,T,
-        phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-        F,H,W,K_p,D_jm)
-    #converged = True
+#    F,H,W,K_p,D_jm, sigmas, lambdas, converged = nash_equilibrium(2000, J, N,K,M,T,
+#        phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
+#        F,H,W,K_p,D_jm)
+    converged = True
 
     # ------------------------------------------------------------------------
     # See if system is stable and if it is weakly connected
@@ -178,7 +183,7 @@ def run_multiple(size,C1,C2,num_samples):
 
   for _ in range(num_samples):
       # Need at least 2 resource users and one gov org
-    N = 2
+    N = 1
     M = 1
     rand = np.random.rand(size-3)
     N += np.sum(rand < 0.6)
@@ -217,7 +222,7 @@ def run_once(N1,N2,N3,K,M,T, C1,C2):
   '''
   Do a single run and return more detailed output.
   '''
-  np.random.seed(0)
+  np.random.seed(3)
   (stability, J, converged,
       phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
       F,H,W,K_p,D_jm) = sample(N1,N2,N3,K,M,T,C1,C2)

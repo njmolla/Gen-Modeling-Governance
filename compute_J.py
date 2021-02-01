@@ -12,8 +12,8 @@ def determine_stability(N,K,M,T,
   # --------------------------------------------------------------------------
   J = np.zeros((T,T))
   # dr•/dr
-  J[0,0] = phi*(ds_dr - np.sum(np.squeeze(psis*de_dr)))
-                                            # 1xn
+  J[0,0] = (phi*(ds_dr - np.sum(psis*de_dr)))[0]
+                               # 1xn
   # dr•/dx (1x(N))
   # For the NxMxN stuff: i = axis 0, m = axis 1, n = axis 2
   J[0,1:N+1] = -phi * np.sum(
@@ -23,12 +23,12 @@ def determine_stability(N,K,M,T,
 
   # dr•/dy
   J[0,N+1:] = -phi * np.sum(
-        np.multiply(psis, np.squeeze(de_dg) * dg_dy),
+        np.multiply(psis, de_dg[0] * dg_dy),
                    # 1xn             1xmxn     mxn
        axis = 1)
 
   # dx•/dr
-  J[1:N+1,0] = np.squeeze(alphas * (betas*db_de*de_dr + beta_hats*dq_da*da_dr))
+  J[1:N+1,0] = (alphas * (betas*db_de*de_dr + beta_hats*dq_da*da_dr))[0]
                                            # 1xn
   # dx•/dx for n != i
   W_p = np.zeros((N,N))
@@ -46,17 +46,17 @@ def determine_stability(N,K,M,T,
 
   # dx•/dx for n = i (overwrite the diagonal)
   indices = np.arange(1,N+1)  # Access the diagonal of the actor part.
-  J[indices,indices] = np.squeeze(alphas) * (
-        np.squeeze(betas*db_de)*np.sum(np.squeeze(de_dg)*np.diagonal(dg_dF,axis1=0, axis2=2)*np.diagonal(F, axis1=0, axis2=2),axis=0)
+  J[indices,indices] = alphas[0] * (
+        (betas*db_de)[0]*np.sum(de_dg[0]*np.diagonal(dg_dF,axis1=0, axis2=2)*np.diagonal(F, axis1=0, axis2=2),axis=0)
         #                                                          mxn                                 mxn
-        + np.squeeze(beta_hats*dq_da)*np.sum(np.squeeze(da_dp)*np.diagonal(dp_dH,axis1=0, axis2=2)*np.diagonal(H,axis1=0, axis2=2),axis=0)
+        + (beta_hats*dq_da)[0]*np.sum(da_dp[0]*np.diagonal(dp_dH,axis1=0, axis2=2)*np.diagonal(H,axis1=0, axis2=2),axis=0)
         - eta_bars*dl_dx
       )
   # dx•/dy
   J[1:N+1,N+1:] = np.transpose(alphas * (
-        np.multiply(betas*db_de, np.squeeze(de_dg)*dg_dy)
+        np.multiply(betas*db_de, de_dg[0]*dg_dy)
                     # 1n   1n                1mn     mn
-        + np.multiply(beta_hats*dq_da, np.squeeze(da_dp)*dp_dy)
+        + np.multiply(beta_hats*dq_da, da_dp[0]*dp_dy)
       ))
 
   # dy•/dr = 0
@@ -68,27 +68,27 @@ def determine_stability(N,K,M,T,
   J[N+1:,1:N+1] = np.transpose(np.multiply(mus,
         np.multiply(rhos,di_dK_p*K_plus)
         - np.multiply(thetas,di_dK_n*K_n)
-        + np.multiply(np.squeeze(rho_bars,axis=2),np.sum(np.multiply(omegas,dt_dD_jm*D_jm),axis=2))
+        + np.multiply(rho_bars[:,:,0],np.sum(np.multiply(omegas,dt_dD_jm*D_jm),axis=2))
                                                                          # ixmxj
-        - np.multiply(np.squeeze(theta_bars,axis=1),np.sum(np.multiply(epsilons,dt_dD_jm*D_jm), axis=1))
+        - np.multiply(theta_bars[:,0,:],np.sum(np.multiply(epsilons,dt_dD_jm*D_jm), axis=1))
                                                                                # ixjxm
       ))
 
   # dy•/dy for m != j, result is mxj
-  J[N+1:,N+1:] = np.multiply(np.transpose(mus),(np.squeeze(
+  J[N+1:,N+1:] = np.multiply(np.transpose(mus),((
                                          # 1m
         np.multiply(rho_bars,omegas*dtmj_dym)
                     # 1m1        1mj
         - np.transpose(np.multiply(theta_bars,epsilons*dtjm_dym),(0,2,1))
                                     # 11m            1jm
-      )))
+      )[0]))
 
   # dy•/dy for m = j
   indices = np.arange(N+1,T)  # Access the diagonal of the governing agency part.
-  J[indices,indices] = np.squeeze(mus)*np.squeeze(rhos*di_dy_p - thetas*di_dy_n
-        + np.squeeze(rho_bars, axis = 2)*np.sum(omegas*dtjm_dym, axis = 2)
-        - np.squeeze(theta_bars, axis = 1)*np.sum(epsilons*dtmj_dym, axis=1)
-      )
+  J[indices,indices] = mus[0]*(rhos*di_dy_p - thetas*di_dy_n
+        + rho_bars[:,:,0]*np.sum(omegas*dtjm_dym, axis = 2)
+        - theta_bars[:,0,:]*np.sum(epsilons*dtmj_dym, axis=1)
+      )[0]
 
 
   # --------------------------------------------------------------------------
