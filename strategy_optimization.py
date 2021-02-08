@@ -1,7 +1,7 @@
 import numpy as np
 from scipy import optimize
 from objective_gradient import objective_grad
-import csv
+import matplotlib.pyplot as plt
 
 def correct_scale_params(scale_params, alloc_params, i):
   '''
@@ -23,7 +23,7 @@ def boundary_projection(mu, strategy, plane):
   return np.sum(np.maximum(strategy*plane - mu, 0)) - 1
 
 
-def grad_descent_constrained(initial_point, max_steps, n, l, J, N,K,M,T,
+def grad_descent_constrained(initial_point, n, l, J, N,K,M,T,
     phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
     F,H,W,K_p,D_jm):
   '''
@@ -39,54 +39,23 @@ def grad_descent_constrained(initial_point, max_steps, n, l, J, N,K,M,T,
     strategy parameters????
   return the new and improved strategy
   '''
-  raw_grad = [] # for debugging
-  projected_grad = [] # for debugging
-  strategies = [] # for debugging
 
   x = initial_point  # strategy
-  strategies.append(x) # for debugging
 
-  alpha = 0.05
+  alpha = 0.005
 
   grad = objective_grad(x, n, l, J, N,K,M,T,
-                      phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-                      F,H,W,K_p,D_jm)
+    phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
+    F,H,W,K_p,D_jm)
 
-  raw_grad.append(grad) # for debugging
-
-  # figure out which plane to project gradient onto
-  plane = np.sign(x)
-  plane[abs(x)<0.0001] = np.sign(grad[abs(x)<0.0001])
-  plane[-(M**2):] = 1 # D_jm cannot be negative, this forces it to stay positive
-
-  # Project gradient onto the plane sum(efforts) == 1
-  grad = grad - np.dot(grad, plane)*plane/sum(abs(plane))
-  projected_grad.append(grad) # for debugging
-
-
-#  x = x + alpha*grad
-#
-#  x[abs(x)<0.001] = 0
-#  x /= np.sum(x*plane) # Normalize to be sure (get some errors without this)
-#
-#  # If strategy does not have all efforts >= 0, project onto space of legal strategies
-#  if np.any(x*plane < -0.01):
-#    try:
-#      ub = np.sum(abs(x)) #np.sum(abs(x[x*plane>0]))
-#      mu = optimize.brentq(boundary_projection, 0, ub, args=(x, plane))
-#    except:
-#      print('bisection bounds did not work')
-#      raise Exception('bisection bounds did not work')
-#    x = plane * np.maximum(x*plane - mu, 0)
-#  strategies.append(x)
-#
-  num_steps = 0
-
-  while num_steps < max_steps:
+  d = len(x)
     # Follow the projected gradient for a fixed step size alpha
-    x = x + alpha*grad
-#    print('banana:', end = ' ')
-#    print(np.sum(x*plane))
+  x = x + alpha*grad
+  plane = np.sign(x) # added
+  plane[abs(plane)<0.00001] = 1 # added
+  if sum(abs(x)) > 1:
+    #project point onto plane
+    x = x + plane*(1-sum(plane*x))/d # added
     x[abs(x)<0.001] = 0
     x /= np.sum(x*plane) # Normalize to be sure (get some errors without this)
 
@@ -94,61 +63,19 @@ def grad_descent_constrained(initial_point, max_steps, n, l, J, N,K,M,T,
     if np.any(x*plane < -0.01):
       try:
         ub = np.sum(abs(x)) #np.sum(abs(x[x*plane>0]))
-#        print()
-#        print('banana')
-#        print(np.sum(np.maximum(x*plane - 0, 0)) - 1)
-#        print(x)
-#        print(plane)
-#        print(np.sum(x*plane))
-#        print(np.sum(np.maximum(x*plane - ub, 0)) - 1)
         mu = optimize.brentq(boundary_projection, 0, ub, args=(x, plane))
       except:
         print('bisection bounds did not work')
         raise Exception('bisection bounds did not work')
       x = plane * np.maximum(x*plane - mu, 0)
-    strategies.append(x)
 
-
-    """
-    print(raw_grad[-1])
-    print(projected_grad[-1])
-    print() # for debugging
-    print('raw')
-    print(raw_grad[-1]) # for debugging
-    print('projected_grad')
-    print(projected_grad[-1]) # for debugging
-    print('point')
-    print(x) # for debugging
-    print('plane')
-    print(plane) # for debugging
-    #"""
-
-    # Compute new gradient and update strategy parameters to match x
-    grad = objective_grad(x, n, l, J, N,K,M,T,
-                          phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-                          F,H,W,K_p,D_jm)
-    raw_grad.append(grad) # for debugging
-
-    # figure out which plane to project gradient onto
-    plane = np.sign(x)
-    plane[abs(x)<0.001] = np.sign(grad[abs(x)<0.001])
-    plane[-(M**2):] = 1 # for parameters that can only be positive, set to positive
-
-    # Project gradient onto the plane abs(params)=1
-    grad = grad - np.dot(grad, plane)*plane/sum(abs(plane))
-    projected_grad.append(grad) # for debugging
-
-    grad_mag = np.linalg.norm(grad)  # to check for convergence
-
-    num_steps += 1
-    if grad_mag < 1e-5:
-      print('gradient descent convergence reached')
-  return x, raw_grad, projected_grad, strategies # normally return only x
+  return x, grad # normally return only x
 
 
 def nash_equilibrium(max_iters,J,N,K,M,T,
-    phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-    F,H,W,K_p,D_jm):
+    phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,
+    theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,
+    dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym):
   '''
   inputs:
     max_iters
@@ -161,21 +88,27 @@ def nash_equilibrium(max_iters,J,N,K,M,T,
     optimized strategy parameters
     updated sigmas and lamdas
   '''
+  F = np.zeros((N,M,N))  # F_i,m,n is ixmxn positive effort for influencing resource extraction governance $
+  H = np.zeros((N,M,N))  # effort for influencing resource access governance $
+  W = np.zeros((N,N))  # effort for collaboration. W_i,n is ixn $
+  K_p = np.zeros((N,M))  # effort for more influence for gov orgs $
+  D_jm = np.zeros((N,M,M))  # D_i,j,m is ixmxj effort for transferring power from each gov org to each other $
+
+
   # Initialize strategy
-  strategy = np.zeros((N, 2*M*N + N + M + M**2))
-  for i in range(N):
-    strategy[i] = np.concatenate((F[i].flatten(),H[i].flatten(),
-                                  W[i].flatten(),K_p[i].flatten(),D_jm[i].flatten()))
-    strategy[i] /= np.sum(strategy[i])
+  strategy = np.random.rand(N, 2*M*N + N + M + M**2)
+  strategy /= np.sum(np.squeeze(strategy),axis=0)
   # sample to get bridging org objectives
   objectives = np.random.randint(0,N-K,size = K)
-  tolerance = 0.01 #
+  tolerance = 0.005 #
   strategy_difference = [1]  # arbitrary initial value, List of differences in euclidean distance between strategies in consecutive iterations
   iterations = 0
-  strategy_prev = []  # a list of the strategies at each iteration
-  strategy_prev.append(strategy.copy())
-  diff_with_eq = []
+  strategy_history = []  # a list of the strategies at each iteration
+  strategy_history.append(strategy.copy())
   converged = True
+  grad = np.zeros(np.shape(strategy))
+  grad_history = []
+  #
   while strategy_difference[-1] > tolerance and iterations < max_iters:
     # Loop through each actor i
     for i in range(N):
@@ -184,34 +117,31 @@ def nash_equilibrium(max_iters,J,N,K,M,T,
       else:
         objective = objectives[i-(N-K)]
 
-
-      new_strategy, raw_grad, projected_grad, strategies = grad_descent_constrained(strategy[i], 1, objective, i, J, N,K,M,T,
+      new_strategy, raw_grad = grad_descent_constrained(strategy[i], objective, i, J, N,K,M,T,
           phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
           F,H,W,K_p,D_jm)
+
       # Check if there are new zeros in the strategy parameters to see if we need to update scale parameters
       # (e.g. for portion of gain through collaboration) to make sure they are consistent with our new
       # strategy parameters.
-      if np.count_nonzero(new_strategy[2*M*N:2*M*N+N]) < np.count_nonzero(strategy[i][2*M*N:2*M*N+N]):
+      if np.count_nonzero(new_strategy[2*M*N:2*M*N+N]) < np.count_nonzero(strategy[i][2*M*N:2*M*N+N]) and (np.any(sigmas>0) or np.any(lambdas > 0)) :
         sigmas = correct_scale_params(sigmas,W[i],i)
         lambdas = correct_scale_params(lambdas,W[i],i)
 
-      # update strategy for this actor
+      # update strategy and gradient for this actor
       strategy[i] = new_strategy
+      grad[i] = raw_grad
 
     # update strategies for all actors
-    strategy_prev.append(strategy.copy())
+    strategy_history.append(strategy.copy())
+    grad_history.append(grad.copy())
     # compute difference in strategies
-    strategy_difference.append(np.linalg.norm((strategy_prev[-2] - strategy_prev[-1])))
+    strategy_difference.append(np.linalg.norm((strategy_history[-2] - strategy_history[-1])))
     iterations += 1
     if iterations == max_iters - 1:
       converged = False
-  for i in range(len(strategy_prev)):
-      diff_with_eq.append(np.linalg.norm(strategy_prev[i] - strategy_prev[-1]))
-#  with open('strategies_1actor.csv', 'w+') as f:
-#    csvwriter = csv.writer(f)
-#    csvwriter.writerows(np.array(strategy_prev))
-#    csvwriter.writerow(strategy_difference)
-#    csvwriter.writerow(diff_with_eq)
-  return F,H,W,K_p,D_jm, sigmas,lambdas, converged
+    plt.plot(np.array(strategy_difference))
+  print(strategy)
+  return F,H,W,K_p,D_jm, sigmas,lambdas, converged, strategy_history
 
 

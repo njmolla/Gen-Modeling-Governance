@@ -52,7 +52,7 @@ def sample(N1,N2,N3,K,M,T, C1,C2):
 
     mus = np.random.rand(1,M) # $
 
-    rhos = np.random.uniform(0,0.3,(1,M)) # $ should be 1 for M=1 based on rho_bar
+    rhos = np.random.uniform(0,1,(1,M)) # $ should be 1 for M=1 based on rho_bar
     rho_bars = np.reshape(1 - rhos,(1,M,1)) # want to be 1,m,1$
 
     omegas = np.zeros((1,M,M)) # omegas_m,j is 1xjxm, want to sum to 1 along m
@@ -105,7 +105,7 @@ def sample(N1,N2,N3,K,M,T, C1,C2):
     dc_dw_p[indices,indices] = 0
     dc_dw_n = np.random.uniform(0,2,(N,N)) #dc_dw_n_i,n is ixn $
     dc_dw_n[indices,indices] = 0
-    dl_dx = np.random.uniform(0.8,1,(N)) #only converges if this is >=0.8
+    dl_dx = np.random.uniform(0,1,(N)) #only converges if this is >=0.8
     di_dK_p = np.random.uniform(0,2,(N,M))#np.zeros((N,M))#np.random.uniform(0,2,(N,M))
     di_dK_n = np.random.uniform(0,2,(N,M))#np.zeros((N,M))#np.random.uniform(0,2,(N,M))
     di_dy_p = np.random.rand(1,M)  # $
@@ -141,15 +141,14 @@ def sample(N1,N2,N3,K,M,T, C1,C2):
     adjacency_matrix = np.zeros([T,T])
     adjacency_matrix[J != 0] = 1
     graph = nx.from_numpy_array(adjacency_matrix,create_using=nx.DiGraph)
+    # filter out systems that are not weakly connected even with all strategy params turned on
     is_connected = nx.is_weakly_connected(graph)
     if is_connected == False:
       continue
 
     # find nash equilibrium strategies
-#    F,H,W,K_p,D_jm, sigmas, lambdas, converged = nash_equilibrium(2000, J, N,K,M,T,
-#        phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-#        F,H,W,K_p,D_jm)
-    converged = True
+    F,H,W,K_p,D_jm, sigmas, lambdas, converged, strategy_history = nash_equilibrium(500, J, N,K,M,T,
+        phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym)
 
     # ------------------------------------------------------------------------
     # See if system is stable and if it is weakly connected
@@ -167,7 +166,7 @@ def sample(N1,N2,N3,K,M,T, C1,C2):
     if is_connected == False:
       print('not weakly connected')
 
-  return (stability, J, converged,
+  return (stability, J, converged, strategy_history,
       phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
       F,H,W,K_p,D_jm)
 
@@ -222,8 +221,8 @@ def run_once(N1,N2,N3,K,M,T, C1,C2):
   '''
   Do a single run and return more detailed output.
   '''
-  np.random.seed(3)
-  (stability, J, converged,
+  np.random.seed(2)
+  (stability, J, converged, strategy_history,
       phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
       F,H,W,K_p,D_jm) = sample(N1,N2,N3,K,M,T,C1,C2)
 
@@ -235,14 +234,14 @@ def run_once(N1,N2,N3,K,M,T, C1,C2):
 #      + np.size(W_p) + np.size(W_n) + np.size(K_p) + np.size(K_n) + np.size(omegas)
 #      + np.size(epsilons) + np.size(D_jm))
 
-  return (stability, J, converged,
+  return (stability, J, converged, strategy_history,
           phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
           F,H,W,K_p,D_jm)
 
 
 def main():
   # Size of system
-  N1 = 1 # number of resource users that benefit from extraction only
+  N1 = 2 # number of resource users that benefit from extraction only
   N2 = 0 # number of users with both extractive and non-extractive use
   N3 = 0  # number of users with only non-extractive use
   K = 0 # number of bridging orgs
@@ -258,7 +257,7 @@ def main():
 
 
 if __name__ == "__main__":
-  (stability, J, converged,
+  (stability, J, converged, strategy_history,
       phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
       F,H,W,K_p,D_jm) = main()
 
