@@ -32,9 +32,9 @@ def determine_stability(N,K,M,T,
                                            # 1xn
   # dx•/dx for n != i
   W_p = np.zeros((N,N))
-  W_p[W>0.001] = W[W>0.001]
+  assign_when(W_p, W, W>=0)
   W_n = np.zeros((N,N))
-  W_n[W<-0.001] = W[W<-0.001]
+  assign_when(W_n, W, W<0)
   J[1:N+1,1:N+1] = np.transpose(np.multiply(alphas,
         np.multiply(betas*db_de,       np.sum(np.multiply(de_dg, dg_dF*F), axis = 1))
                      #  1xn                                ixmxn
@@ -62,9 +62,9 @@ def determine_stability(N,K,M,T,
   # dy•/dr = 0
   # dy•/dx, result is mxi
   K_plus = np.zeros((N,M))
-  K_plus[K_p>0] = K_p[K_p>0]
+  assign_when(K_plus, K_p, K_p>=0)
   K_n = np.zeros((N,M))
-  K_n[K_p<0] = abs(K_p[K_p<0])
+  assign_when(K_n, abs(K_p), K_p>=0)
   J[N+1:,1:N+1] = np.transpose(np.multiply(mus,
         np.multiply(rhos,di_dK_p*K_plus)
         - np.multiply(thetas,di_dK_n*K_n)
@@ -101,3 +101,20 @@ def determine_stability(N,K,M,T,
     stability = False  # unstable if real part is positive, inconclusive if 0
 
   return J, eigvals, stability
+
+"""
+This does
+   lhs[conditions] = rhs[conditions]
+lhs and rhs are any numpy arrays with the same shape
+conditions is a boolean numpy array with the same shape
+
+For example, to do
+   x[x > 0] = y[x > 0]
+use
+    assign_when(x, y, x > 0)
+"""
+@jit(nopython=True)
+def assign_when(lhs, rhs, conditions):
+  for nd_index in np.ndindex(lhs.shape):
+    if conditions[nd_index]:
+      lhs[nd_index] = rhs[nd_index]

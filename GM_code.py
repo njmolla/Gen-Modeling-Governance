@@ -105,7 +105,7 @@ def sample(N1,N2,N3,K,M,T, C1,C2):
     dc_dw_p[indices,indices] = 0
     dc_dw_n = np.random.uniform(0,2,(N,N)) #dc_dw_n_i,n is ixn $
     dc_dw_n[indices,indices] = 0
-    dl_dx = np.random.uniform(0,1,(N)) #only converges if this is >=0.8
+    dl_dx = np.random.uniform(0,1,(N)) # more likely to converge if this is >=0.8
     di_dK_p = np.random.uniform(0,2,(N,M))#np.zeros((N,M))#np.random.uniform(0,2,(N,M))
     di_dK_n = np.random.uniform(0,2,(N,M))#np.zeros((N,M))#np.random.uniform(0,2,(N,M))
     di_dy_p = np.random.rand(1,M)  # $
@@ -147,9 +147,15 @@ def sample(N1,N2,N3,K,M,T, C1,C2):
       continue
 
     # find nash equilibrium strategies
-    F,H,W,K_p,D_jm, sigmas, lambdas, converged, strategy_history = nash_equilibrium(500, J, N,K,M,T,
-        phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym)
-
+#    F,H,W,K_p,D_jm, sigmas, lambdas, converged, strategy_history, grad = nash_equilibrium(500, J, N,K,M,T,
+#        phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym)
+#    # check whether result makes sense
+    if np.all(np.diag(np.fliplr(np.squeeze(F)))*np.squeeze(de_dg)[::-1] <= 1e-5):
+      logical = True
+    else:
+      logical = False
+    #print(logical)
+    #print(-np.diag(np.fliplr(np.squeeze(F)))*np.squeeze(de_dg)[::-1])
     # ------------------------------------------------------------------------
     # See if system is stable and if it is weakly connected
     # ------------------------------------------------------------------------
@@ -166,7 +172,7 @@ def sample(N1,N2,N3,K,M,T, C1,C2):
     if is_connected == False:
       print('not weakly connected')
 
-  return (stability, J, converged, strategy_history,
+  return (stability, J, converged, strategy_history, logical, grad,
       phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
       F,H,W,K_p,D_jm)
 
@@ -179,50 +185,58 @@ def run_multiple(size,C1,C2,num_samples):
   num_stable_webs = 0
   num_stable_webs_filtered = 0
   num_converged = 0
-
-  for _ in range(num_samples):
+  num_logical = 0
+  np.random.seed(0)
+  for i in range(num_samples):
+    print('figure ' + str(i+1))
       # Need at least 2 resource users and one gov org
-    N = 1
+    N1 = 2
+    N2 = 0
+    N3 = 0
+    K = 0
     M = 1
-    rand = np.random.rand(size-3)
-    N += np.sum(rand < 0.6)
-    K = np.sum(rand < 0.8) - np.sum(rand < 0.6)
-    M += np.sum(rand > 0.8)
-    rand2 = np.random.rand(N-1)
-    # choose at random whether guaranteed extractor is just extractor or extractor + accessor
-    rand3 = np.random.rand(1)
-    if rand3 < 0.5:
-      N1 = 1 + np.sum(rand2 < 0.33)
-      N2 = np.sum(rand2 > 0.33) - np.sum(rand2 > 0.66)
-    else:
-      N1 = np.sum(rand2 < 0.33)
-      N2 = 1 + np.sum(rand2 > 0.33) - np.sum(rand2 > 0.66)
-    N3 = np.sum(rand2 > 0.66)
+#    rand = np.random.rand(size-3)
+#    N += np.sum(rand < 0.6)
+#    K = np.sum(rand < 0.8) - np.sum(rand < 0.6)
+#    M += np.sum(rand > 0.8)
+#    rand2 = np.random.rand(N-1)
+#    # choose at random whether guaranteed extractor is just extractor or extractor + accessor
+#    rand3 = np.random.rand(1)
+#    if rand3 < 0.5:
+#      N1 = 1 + np.sum(rand2 < 0.33)
+#      N2 = np.sum(rand2 > 0.33) - np.sum(rand2 > 0.66)
+#    else:
+#      N1 = np.sum(rand2 < 0.33)
+#      N2 = 1 + np.sum(rand2 > 0.33) - np.sum(rand2 > 0.66)
+#    N3 = np.sum(rand2 > 0.66)
     N = N1 + N2 + N3 + K # total number of resource users
     T = N + M + 1 # total number of state variables
-    print((N1,N2,N3,K,M))
+#    print((N1,N2,N3,K,M))
     try:
       result = sample(N1,N2,N3,K,M,T,C1,C2)
     except:
       continue
     stability = result[0] # stability is the first return value
     converged = result[2]
+    logical = result[4]
     if stability:
       num_stable_webs += 1
       if converged:
         num_stable_webs_filtered += 1
     if converged:
       num_converged += 1
+    if logical:
+      num_logical += 1
 
-  return num_stable_webs, num_stable_webs_filtered, num_converged  # proportion of stable webs
+  return num_stable_webs, num_stable_webs_filtered, num_converged, num_logical  # proportion of stable webs
 
 
 def run_once(N1,N2,N3,K,M,T, C1,C2):
   '''
   Do a single run and return more detailed output.
   '''
-  np.random.seed(2)
-  (stability, J, converged, strategy_history,
+  np.random.seed(0)
+  (stability, J, converged, strategy_history, logical, grad,
       phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
       F,H,W,K_p,D_jm) = sample(N1,N2,N3,K,M,T,C1,C2)
 
@@ -234,7 +248,7 @@ def run_once(N1,N2,N3,K,M,T, C1,C2):
 #      + np.size(W_p) + np.size(W_n) + np.size(K_p) + np.size(K_n) + np.size(omegas)
 #      + np.size(epsilons) + np.size(D_jm))
 
-  return (stability, J, converged, strategy_history,
+  return (stability, J, converged, strategy_history, logical, grad,
           phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
           F,H,W,K_p,D_jm)
 
@@ -257,7 +271,7 @@ def main():
 
 
 if __name__ == "__main__":
-  (stability, J, converged, strategy_history,
+  (stability, J, converged, strategy_history, logical, grad,
       phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
       F,H,W,K_p,D_jm) = main()
 

@@ -1,8 +1,9 @@
 import numpy as np
 from compute_J import determine_stability
+from compute_J import assign_when
 from numba import jit
 
-@jit(nopython=True)
+#@jit(nopython=True)
 def objective_grad(strategy, n, l, J, N,K,M,T,
     phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
     F,H,W,K_p,D_jm):
@@ -31,7 +32,7 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
   J, eigvals, stability = determine_stability(N,K,M,T,
       phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
       F,H,W,K_p,D_jm)
-
+  #print('Jacobian:',str(J))
   # Compute inverse Jacobian
   J_inv = np.linalg.inv(J)
 
@@ -46,6 +47,7 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
         np.multiply(de_dg,dg_dF)
                   # 1mn    kmn
       ), (2,0,1))  # transpose kmn -> nkm
+
   dydot_dF = np.zeros([M,N,M,N])
 
   drdot_dH = np.zeros([N,M,N])
@@ -86,6 +88,8 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
 
   ## Compute how the steady state of the system changes with respect to each strategy parameter
   dR_dF, dX_dF, dY_dF = multiply_by_inverse_jacobian(drdot_dF, dxdot_dF, dydot_dF, J_inv, T,N,M)
+  print('')
+  print('dR_dF:', str(dR_dF))
   dR_dH, dX_dH, dY_dH = multiply_by_inverse_jacobian(drdot_dH, dxdot_dH, dydot_dH, J_inv, T,N,M)
   dR_dW_p, dX_dW_p, dY_dW_p = multiply_by_inverse_jacobian(drdot_dW_p, dxdot_dW_p, dydot_dW_p, J_inv, T,N,M)
   dR_dW_n, dX_dW_n, dY_dW_n = multiply_by_inverse_jacobian(drdot_dW_n, dxdot_dW_n, dydot_dW_n, J_inv, T,N,M)
@@ -149,8 +153,8 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
                 )
             ,axis=0)  # Sum over k
         ,axis=0)
-    grad_e_W[W[l]>=0] = grad_e_W_p[W[l]>=0]
-    grad_e_W[W[l]<0] = grad_e_W_n[W[l]<0]
+    assign_when(grad_e_W, grad_e_W_p, W[l]>=0)
+    assign_when(grad_e_W, grad_e_W_n, W[l]<0)
 
     grad_e_K = np.zeros((M))
     grad_e_K_p = de_dr[0,n] * dR_dK_p[l] + np.sum(np.multiply(np.reshape(de_dg[0,:,n]*dg_dy[:,n], (M,1)), dY_dK_p[:,l])
@@ -172,8 +176,8 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
             ,axis=0)  # Sum over k
         ,axis=0)
 
-    grad_e_K[K_p[l]>=0] = grad_e_K_p[K_p[l]>=0]
-    grad_e_K[K_p[l]<0] = grad_e_K_n[K_p[l]<0]
+    assign_when(grad_e_K, grad_e_K_p, K_p[l]>=0)
+    assign_when(grad_e_K, grad_e_K_n, K_p[l]<0)
 
     grad_e_Djm = de_dr[0,n] * dR_dDjm[l] + np.sum(np.multiply(np.reshape(de_dg[0,:,n]*dg_dy[:,n], (M,1,1)), dY_dDjm[:,l])
             + np.sum(
@@ -221,9 +225,8 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
                 dX_dW_n[:,l:l+1,:]
               ),axis=0)
           ,axis=0)
-
-    grad_a_W[W[l]>=0] = grad_a_W_p[W[l]>=0]
-    grad_a_W[W[l]<0] = grad_a_W_n[W[l]<0]
+    assign_when(grad_a_W, grad_a_W_p, W[l]>=0)
+    assign_when(grad_a_W, grad_a_W_n, W[l]<0)
 
     grad_a_K = np.zeros(M)
     grad_a_K_p = da_dr[0,n] * dR_dK_p[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1)),dY_dK_p[:,l])
@@ -241,10 +244,8 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
                 dX_dK_n[:,l:l+1,:]
               ),axis=0)
           ,axis=0)
-
-    grad_a_K[K_p[l]>=0] = grad_a_K_p[K_p[l]>=0]
-    grad_a_K[K_p[l]<0] = grad_a_K_n[K_p[l]<0]
-
+    assign_when(grad_a_K, grad_a_K_p, K_p[l]>=0)
+    assign_when(grad_a_K, grad_a_K_n, K_p[l]<0)
 
     grad_a_Djm = da_dr[0,n] * dR_dDjm[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1,1)),dY_dDjm[:,l])
           + np.sum(
@@ -253,7 +254,6 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
                 dX_dDjm[:,l:l+1,:,:]
               ),axis=0)
           ,axis=0)
-
 
 #  print(np.concatenate((grad_e_F.flatten(),
 #                           grad_e_H.flatten(),
@@ -316,3 +316,4 @@ def multiply_by_inverse_jacobian(drdot_dp, dxdot_dp, dydot_dp, J_inv, T, N, M):
   dX_dW_n = dSS_dW_n.reshape(T,N,N)[1:N+1]
   dY_dW_n = dSS_dW_n.reshape(T,N,N)[N+1:N+1+M]
 """
+
