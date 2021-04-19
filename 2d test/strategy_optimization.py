@@ -98,7 +98,6 @@ def nash_equilibrium(max_iters,J,N,K,M,T,
 #  strategy = np.random.uniform(-1,0,size = (N, 2*M*N + N + M + M**2)) #FOR DEBUGGING
 #  strategy /= np.sum(abs(np.squeeze(strategy)),axis=0)
   strategy = np.zeros((N, 2*M*N + N + M + M**2))
-
   # sample to get bridging org objectives
   objectives = np.random.randint(0,N-K,size = K)
   tolerance = 1*alpha #
@@ -113,7 +112,8 @@ def nash_equilibrium(max_iters,J,N,K,M,T,
   #
   while max_diff > tolerance and iterations < max_iters:
     if iterations > 300:
-      alpha = 0.0001
+      #alpha = 0.0001
+      alpha = 1
 
     # Loop through each actor i
     for i in range(N):

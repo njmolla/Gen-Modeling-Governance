@@ -34,7 +34,8 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
       F,H,W,K_p,D_jm)
   #print('Jacobian:',str(J))
   # Compute inverse Jacobian
-  J_inv = np.linalg.inv(J)
+  J_2d = np.array([J[0,0],J[0,2],J[2,0],J[2,2]]).reshape((2,2))
+  J_inv = np.linalg.inv(J_2d)
 
   #TO DO: This section doesn't need to be calculated every time (except for dxdot_dws)
   # Compute how the rhs of system changes with respect to each strategy parameter
@@ -86,15 +87,22 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
   dydot_dDjm[np.diag_indices(M,1),:,np.diag_indices(M,1),:] = np.multiply(np.reshape(np.transpose(-mus*theta_bars[0,0]),(M,1,1)),np.transpose(np.multiply(epsilons,dt_dD_jm),(2,0,1))) # eq __, mxnxl
 
   ## Compute how the steady state of the system changes with respect to each strategy parameter
-  dR_dF, dX_dF, dY_dF = multiply_by_inverse_jacobian(drdot_dF, dxdot_dF, dydot_dF, J_inv, T,N,M)
+  dR_dF, dY_dF = multiply_by_inverse_jacobian(drdot_dF, dydot_dF, J_inv, T,N,M)
 #  print('')
 #  print(dR_dF)
-  dR_dH, dX_dH, dY_dH = multiply_by_inverse_jacobian(drdot_dH, dxdot_dH, dydot_dH, J_inv, T,N,M)
-  dR_dW_p, dX_dW_p, dY_dW_p = multiply_by_inverse_jacobian(drdot_dW_p, dxdot_dW_p, dydot_dW_p, J_inv, T,N,M)
-  dR_dW_n, dX_dW_n, dY_dW_n = multiply_by_inverse_jacobian(drdot_dW_n, dxdot_dW_n, dydot_dW_n, J_inv, T,N,M)
-  dR_dK_p, dX_dK_p, dY_dK_p = multiply_by_inverse_jacobian(drdot_dK_p, dxdot_dK_p, dydot_dK_p, J_inv, T,N,M)
-  dR_dK_n, dX_dK_n, dY_dK_n = multiply_by_inverse_jacobian(drdot_dK_n, dxdot_dK_n, dydot_dK_n, J_inv, T,N,M)
-  dR_dDjm, dX_dDjm, dY_dDjm = multiply_by_inverse_jacobian(drdot_dDjm, dxdot_dDjm, dydot_dDjm, J_inv, T,N,M)
+  dR_dH, dY_dH = multiply_by_inverse_jacobian(drdot_dH, dydot_dH, J_inv, T,N,M)
+  dR_dW_p, dY_dW_p = multiply_by_inverse_jacobian(drdot_dW_p, dydot_dW_p, J_inv, T,N,M)
+  dR_dW_n, dY_dW_n = multiply_by_inverse_jacobian(drdot_dW_n, dydot_dW_n, J_inv, T,N,M)
+  dR_dK_p, dY_dK_p = multiply_by_inverse_jacobian(drdot_dK_p, dydot_dK_p, J_inv, T,N,M)
+  dR_dK_n, dY_dK_n = multiply_by_inverse_jacobian(drdot_dK_n, dydot_dK_n, J_inv, T,N,M)
+  dR_dDjm, dY_dDjm = multiply_by_inverse_jacobian(drdot_dDjm, dydot_dDjm, J_inv, T,N,M)
+  dX_dF = np.zeros((1, 1, 1, 1))
+  dX_dH = np.zeros((1, 1, 1, 1))
+  dX_dW_p = np.zeros((1, 1, 1))
+  dX_dW_n = np.zeros((1, 1, 1))
+  dX_dK_p = np.zeros((1, 1, 1))
+  dX_dK_n = np.zeros((1, 1, 1))
+  dX_dDjm = np.zeros((1, 1, 1, 1))
 #  print('dR_dK_p:', str(dR_dK_p))
 #  print('dR_dK_n:', str(dR_dK_n))
 #  print('dX_dK_p:', str(dX_dK_p))
@@ -295,13 +303,13 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
 
 
 
-def multiply_by_inverse_jacobian(drdot_dp, dxdot_dp, dydot_dp, J_inv, T, N, M):
+def multiply_by_inverse_jacobian(drdot_dp, dydot_dp, J_inv, T, N, M):
+  T = T-N
   # shape is the shape of strategy parameter p. For example, D_jm is (N,M,M).
   shape = drdot_dp.shape
   # dSdot_dp == how steady state changes wrt p, packed into one variable
   dSdot_dp = np.concatenate(
                  (np.broadcast_to(drdot_dp, (1, *shape)),
-                 dxdot_dp,
                  dydot_dp),
              axis=0)
 
@@ -313,10 +321,9 @@ def multiply_by_inverse_jacobian(drdot_dp, dxdot_dp, dydot_dp, J_inv, T, N, M):
   # unpack
   dSS_dp = dSS_dp.reshape((T, *shape))
   dR_dp = dSS_dp[0]
-  dX_dp = dSS_dp[1:N+1]
-  dY_dp = dSS_dp[N+1:N+1+M]
+  dY_dp = dSS_dp[1:1+M]
 
-  return dR_dp, dX_dp, dY_dp
+  return dR_dp, dY_dp
 """
   dSdot_dW_n = np.concatenate((np.broadcast_to(drdot_dW_n,(1,N,N)),dxdot_dW_n,dydot_dW_n), axis=0)
   dSdot_dW_n = dSdot_dW_n.reshape(T,(N)**2)

@@ -70,7 +70,7 @@ def sample(N1,N2,N3,K,M,T, C1,C2):
     thetas = np.random.rand(1,M)# $
     theta_bars = (1 - thetas).reshape(1,1,M) # want to be 1,1,m $
 
-    theta_bars_j = np.sum(np.multiply(mus*rho_bars,omegas),axis=2)
+    theta_bars_j = np.sum(np.multiply(rho_bars,omegas),axis=2)
 
     epsilons = np.zeros([1,M,M]) # epsilon_m,j is 1xjxm $
     epsilons = np.multiply(omegas,np.squeeze(rho_bars,axis=2)/
@@ -81,24 +81,29 @@ def sample(N1,N2,N3,K,M,T, C1,C2):
     # ------------------------------------------------------------------------
     # Initialize exponent parameters
     # ------------------------------------------------------------------------
-    ds_dr = np.random.uniform(-1,1,(1))  # 0-1 $
-    de_dr = np.random.uniform(1,2,(1,N)) # 0-2
+    ds_dr = np.random.rand(1)  # 0-1 $
+    de_dr = np.random.uniform(1,2,(1,N))#np.random.rand(1,N)  # $
     de_dg = np.zeros((1,M,N))  # $
+    #de_dg[0,0,:] = np.array([0,1]) # FOR DEBUGGING
     links = np.random.rand(N1+N2) < C1
     # resample until at least one gov-extraction interaction
     while np.count_nonzero(links) == 0:
       links = np.random.rand(N1+N2) < C1
-    de_dg[:,:,0:N1+N2][:,:,links] = np.random.uniform(-1,1,(1,M,sum(links)))
+    de_dg[:,:,0:N1+N2][:,:,links] = np.random.uniform(-1,0,(1,M,sum(links)))
     dg_dF = np.random.uniform(0,2,(N,M,N))  # dg_m,n/(dF_i,m,n * x_i) is ixmxn $
+                                            # should be positive!
+    #dg_dF[0,0,:] = np.zeros(N) # FOR DEBUGGING
     dg_dy = np.random.rand(M,N)*2 # $
     dp_dy = np.random.rand(M,N)*2 # $
-    db_de = np.random.uniform(-1,1,(1,N))
+    db_de = np.random.rand(1,N)*2 # $
+    db_de = np.zeros((1,N)) # FOR DEBUGGING
     da_dr = np.random.rand(1,N)*2 # $
-    dq_da = np.random.uniform(-1,1,(1,N)) # $
+    dq_da = np.random.uniform(-2,2,(1,N)) # $
     da_dp = np.random.uniform(-1,1,((1,M,N)))
     links = np.random.rand(N2+N3) < C1
     da_dp[:,:,N1:N-K][:,:,links] = np.random.uniform(-1,1,(1,M,sum(links)))
     dp_dH = np.random.uniform(0,2,(N,M,N)) # dp_m,n/(dH_i,m,n * x_i) is ixmxn $
+    dp_dH = np.zeros((N,M,N)) # dp_m,n/(dH_i,m,n * x_i) is ixmxn $ # FOR DEBUGGING
     dc_dw_p = np.random.uniform(0,2,(N,N)) #dc_dw_p_i,n is ixn $
     #dc_dw_p[0] = np.zeros(N) # FOR DEBUGGING
     indices = np.arange(0,N)
@@ -106,11 +111,20 @@ def sample(N1,N2,N3,K,M,T, C1,C2):
     dc_dw_n = np.random.uniform(0,2,(N,N)) #dc_dw_n_i,n is ixn $
     #dc_dw_n[0] = np.zeros(N) # FOR DEBUGGING
     dc_dw_n[indices,indices] = 0
-    dl_dx = np.random.uniform(0.5,1,(N)) # more likely to converge if this is >=0.8
-    di_dK_p = np.random.uniform(0,2,(N,M))
+    dl_dx = np.random.uniform(0,1,(N)) # more likely to converge if this is >=0.8
+    dl_dx = np.zeros((N)) # FOR DEBUGGING
+    di_dK_p = np.random.uniform(0,2,(N,M))#np.zeros((N,M))
+    #di_dK_p = np.zeros((N,M)) # FOR DEBUGGING
+    #di_dK_p[0] = 1 # FOR DEBUGGING
+    #di_dK_p[1] = 1 # FOR DEBUGGING
     di_dK_n = np.random.uniform(0,2,(N,M))
-    di_dy_p = np.random.rand(1,M)  #
-    di_dy_n = np.random.uniform(0,2,(1,M))  #
+    #di_dK_n[0] = 2 # FOR DEBUGGING
+    #di_dK_n[1] = 2 # FOR DEBUGGING
+    #di_dK_n = np.zeros((N,M)) # FOR DEBUGGING
+    di_dy_p = np.random.rand(1,M)  # $
+    di_dy_p[0] = 1 # FOR DEBUGGING
+    di_dy_n = np.random.rand(1,M)  # $
+    di_dy_n[0] = 2 #FOR DEBUGGING
     if M==1:
       dt_dD_jm = np.zeros((N,M,M))  # dt_j->m/d(D_i,j->m * x_i) is ixmxj  $
       dtjm_dym = np.zeros((M,M))  # 1xmxj
@@ -131,62 +145,33 @@ def sample(N1,N2,N3,K,M,T, C1,C2):
     D_jm = np.random.rand(N,M,M)  # D_i,j,m is ixmxj effort for transferring power from each gov org to each other $
 
 
+    # ------------------------------------------------------------------------
+    # Strategy optimization
+    # ------------------------------------------------------------------------
 
     # calculate Jacobian
     J, eigvals, stability = determine_stability(N,K,M,T,
         phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
         F,H,W,K_p,D_jm)
-
-    # Filter out systems that are trivially unstable (unstable in any individual state variable)
-    while np.any(np.diagonal(J)>0):
-      # resample resource parameters if drdot_dr is positive
-      while J[0,0]>0:
-        ds_dr = np.random.uniform(-1,1,(1))  # 0-1 $
-        de_dr = np.random.uniform(1,2,(1,N)) # 0-2
-        phi = np.random.rand(1) # $
-        psis = np.zeros([1,N]) # $
-        psis[0,0:N1+N2] = np.random.dirichlet(np.ones(N1+N2),1) # need to sum to 1
-        J, eigvals, stability = determine_stability(N,K,M,T,
-                                                     phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-                                                     F,H,W,K_p,D_jm)
-      # resample all actor parameters if any dxdot_dx are positive
-      while np.any(np.diagonal(J)[1:-M] > 0):
-        db_de = np.random.uniform(-1,1,(1,N))
-        dq_da = np.random.uniform(-1,1,(1,N))
-        dl_dx = np.random.uniform(0.5,1,(N))
-        de_dg[:,:,0:N1+N2][:,:,links] = np.random.uniform(-1,1,(1,M,sum(links)))
-        dg_dF = np.random.uniform(0,2,(N,M,N))
-
-      while np.any(np.diagonal(J)[-M:] > 0):
-        di_dy_p = np.random.rand(1,M)
-        di_dy_n = np.random.uniform(0,2,(1,M))
-        thetas = np.random.rand(1,M)
-        rhos = np.random.uniform(0,1,(1,M))
-
-    # filter out systems that are not weakly connected even with all strategy params turned on
     adjacency_matrix = np.zeros([T,T])
     adjacency_matrix[J != 0] = 1
     graph = nx.from_numpy_array(adjacency_matrix,create_using=nx.DiGraph)
+    # filter out systems that are not weakly connected even with all strategy params turned on
     is_connected = nx.is_weakly_connected(graph)
     if is_connected == False:
       continue
 
-    # ------------------------------------------------------------------------
-    # Strategy optimization
-    # ------------------------------------------------------------------------
-
     # find nash equilibrium strategies
-    F,H,W,K_p,D_jm, sigmas, lambdas, converged, strategy_history, grad = nash_equilibrium(15000, J, N,K,M,T,
+    F,H,W,K_p,D_jm, sigmas, lambdas, converged, strategy_history, grad = nash_equilibrium(500, J, N,K,M,T,
         phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym)
 
-    # check whether result makes sense
+#    # check whether result makes sense
 #    if np.all(np.diag(np.fliplr(np.squeeze(F)))*np.squeeze(de_dg)[::-1] <= 1e-5):
 #      logical = True
 #    else:
 #      logical = False
-    #print(logical)
-    #print(-np.diag(np.fliplr(np.squeeze(F)))*np.squeeze(de_dg)[::-1])
-
+#    print(logical)
+#    print(-np.diag(np.fliplr(np.squeeze(F)))*np.squeeze(de_dg)[::-1])
     # ------------------------------------------------------------------------
     # See if system is stable and if it is weakly connected
     # ------------------------------------------------------------------------
@@ -266,7 +251,7 @@ def run_once(N1,N2,N3,K,M,T, C1,C2):
   '''
   Do a single run and return more detailed output.
   '''
-  np.random.seed(3)
+  np.random.seed(1)
   (stability, J, converged, strategy_history, logical, grad,
       phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
       F,H,W,K_p,D_jm) = sample(N1,N2,N3,K,M,T,C1,C2)
@@ -279,7 +264,7 @@ def run_once(N1,N2,N3,K,M,T, C1,C2):
 #      + np.size(W_p) + np.size(W_n) + np.size(K_p) + np.size(K_n) + np.size(omegas)
 #      + np.size(epsilons) + np.size(D_jm))
 
-  return (N1,N2,N3,K,M,T, C1,C2, stability, J, converged, strategy_history, logical, grad,
+  return (stability, J, converged, strategy_history, logical, grad,
           phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
           F,H,W,K_p,D_jm)
 
@@ -302,9 +287,9 @@ def main():
 
 
 if __name__ == "__main__":
-  (N1,N2,N3,K,M,T, C1,C2, stability, J, converged, strategy_history, logical, grad,
-          phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-          F,H,W,K_p,D_jm) = main()
+  (stability, J, converged, strategy_history, logical, grad,
+      phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
+      F,H,W,K_p,D_jm) = main()
 
 
 

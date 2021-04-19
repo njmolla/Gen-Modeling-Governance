@@ -17,8 +17,9 @@ def determine_stability(N,K,M,T,
   # dr•/dx (1x(N))
   # For the NxMxN stuff: i = axis 0, m = axis 1, n = axis 2
   J[0,1:N+1] = -phi * np.sum(
-        np.multiply(psis,np.sum(np.multiply(de_dg, dg_dF * F), axis = 1)),axis = 1)
+        np.multiply(psis,np.sum(np.multiply(de_dg, dg_dF * F), axis = 1)),
                                           # 1xmxn   ixmxn
+       axis = 1)
 
   # dr•/dy
   J[0,N+1:] = -phi * np.sum(
