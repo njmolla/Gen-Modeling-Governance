@@ -1,32 +1,42 @@
 from GM_code import run_multiple
 import numpy as np
-import csv
 from mpi4py import MPI
 import sys
+import pickle
 
 comm = MPI.COMM_WORLD
 
-num_processors = 100
+num_processors = 160
+
+print(comm.rank)
 
 if comm.size != num_processors:
   print('ERROR running on %d processors' % comm.size)
   sys.exit()
 
 size_ranges = np.arange(5,15,1)
-connectance_ranges = np.linspace(0.2,0.6,10)
-num_samples = 300
+connectance_ranges = np.linspace(0.01,0.6,32)
+num_samples = 200
 
-size = size_ranges[comm.rank//10]
-C1 = connectance_ranges[comm.rank%10]
-np.random.seed(2)
-C2 = 0.2
+cells_per_row = len(connectance_ranges)
+cells_per_processor = len(size_ranges)*cells_per_row/num_processors
+processors_per_row = cells_per_row/cells_per_processor
 
-num_stable_webs, num_stable_webs_filtered, num_converged = run_multiple(size,C1,C2,num_samples)
+processor_num = comm.rank
+size = size_ranges[int(processor_num//processors_per_row)] # number of the row
+start_index = int(cells_per_processor*(processor_num%processors_per_row))
+connectances = connectance_ranges[start_index:int(start_index+cells_per_processor)]
 
-print(num_stable_webs)
-print(num_stable_webs_filtered)
+np.random.seed(comm.rank+666)
 
-with open('PSW_%s.csv'%(comm.rank), 'w+') as f:
-  csvwriter = csv.writer(f)
-  csvwriter.writerow((num_stable_webs, num_stable_webs_filtered, num_converged))
+num_stable_webs = np.zeros(int(cells_per_processor))
+num_converged = np.zeros(int(cells_per_processor))
 
+for i, connectance in enumerate(connectances):
+  num_stable_webs[i], num_converged[i] = run_multiple(size,connectance,num_samples)
+
+with open('PSW_%s'%(comm.rank), 'wb') as f:
+  pickle.dump(num_stable_webs, f)
+
+with open('convergence_%s'%(comm.rank), 'wb') as f2:
+  pickle.dump(num_converged, f2)

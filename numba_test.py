@@ -2,7 +2,7 @@ from numba import jit
 import numpy as np
 import time
 
-x = np.arange(10000).reshape(100, 100)
+x = np.arange(1000).reshape(10, 10, 10)
 
 """
 This does
@@ -64,9 +64,12 @@ def go_fast(a): # Function is compiled and runs in machine code
   product = a*b
 #  product[product>5000] = 1000
   assign_scalar_when(product, 1000, product > 5000)
+  np.concatenate((np.ones((2,2)),np.zeros((2,2))))
+  np.sum(product)
+  #np.diag(product)
 #    trace = 0.0
-#    for i in range(a.shape[0]):
-#        trace += np.tanh(a[i, i])
+  for i in range(a.shape[0]):
+    a[i,:,i] = 3
   return product
 
 # DO NOT REPORT THIS... COMPILATION TIME IS INCLUDED IN THE EXECUTION TIME!

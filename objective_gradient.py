@@ -5,8 +5,8 @@ from numba import jit
 
 #@jit(nopython=True)
 def objective_grad(strategy, n, l, J, N,K,M,T,
-    phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-    F,H,W,K_p,D_jm):
+    phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
+    F,H,W,K_p,dR_match):
   '''
   inputs:
     strategy for a single actor (flattened)
@@ -26,12 +26,11 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
   H[l] = strategy[M*N:2*M*N].reshape([M,N])
   W[l] = strategy[2*M*N:2*M*N+N].reshape([N])
   K_p[l] = strategy[2*M*N+N:2*M*N+N+M].reshape([M])
-  D_jm[l] = strategy[2*M*N+N+M:].reshape([M,M])
 
   # Compute Jacobian
-  J, eigvals, stability = determine_stability(N,K,M,T,
-      phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,rhos,rho_bars,thetas,theta_bars,omegas,epsilons,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,dt_dD_jm,di_dy_p,di_dy_n,dtjm_dym,dtmj_dym,
-      F,H,W,K_p,D_jm)
+  J = determine_stability(N,K,M,T,
+	  phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
+	  F,H,W,K_p)
   #print('Jacobian:',str(J))
   # Compute inverse Jacobian
   J_inv = np.linalg.inv(J)
@@ -40,6 +39,8 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
   # Compute how the rhs of system changes with respect to each strategy parameter
   drdot_dF = -phi*np.multiply(psis.reshape(1,1,N),np.multiply(de_dg,dg_dF))
   dxdot_dF = np.zeros([N,N,M,N])
+#  for i in range(N):
+#    dxdot_dF[i,:,:,i] = alphas[0,i]*betas[0,i]*db_de[0,i]*de_dg[0,:,i]*dg_dF[:,:,i]
   dxdot_dF[np.arange(0,N),:,:,np.arange(0,N)] = np.transpose(np.multiply(
              #n k m (gets rid of last index)
         np.reshape(alphas*betas*db_de, (1,1,N)),
@@ -70,37 +71,25 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
   dxdot_dK_p = np.zeros([N,N,M])
   dydot_dK_p = np.zeros([M,N,M])
   # result is mxn
-  dydot_dK_p[np.arange(0,M),:,np.arange(0,M)] = np.transpose(np.multiply(mus*rhos,di_dK_p))
+  dydot_dK_p[np.arange(0,M),:,np.arange(0,M)] = np.transpose(np.multiply(mus,di_dK_p))
 
   drdot_dK_n = np.zeros([N,M])
   dxdot_dK_n = np.zeros([N,N,M])
   dydot_dK_n = np.zeros([M,N,M])
-  dydot_dK_n[np.arange(0,M),:,np.arange(0,M)] = np.transpose(np.multiply(-mus*thetas,di_dK_n))
-
-  drdot_dDjm = np.zeros([N,M,M])
-  dxdot_dDjm = np.zeros([N,N,M,M])
-  dydot_dDjm = np.zeros([M,N,M,M]) # mxnxjxl
-  # case for the gov org being transferred to (m=l), result is mxnxj
-  dydot_dDjm[np.diag_indices(M,1),:,:,np.diag_indices(M,1)] = np.transpose(np.multiply(mus*rho_bars,np.multiply(omegas,dt_dD_jm)),(1,0,2)) # eq ___, mxnxj
-  # case for the gov org transferring (m=j), result is mxnxl
-  dydot_dDjm[np.diag_indices(M,1),:,np.diag_indices(M,1),:] = np.multiply(np.reshape(np.transpose(-mus*theta_bars[0,0]),(M,1,1)),np.transpose(np.multiply(epsilons,dt_dD_jm),(2,0,1))) # eq __, mxnxl
+  dydot_dK_n[np.arange(0,M),:,np.arange(0,M)] = np.transpose(np.multiply(-mus,di_dK_n))
 
   ## Compute how the steady state of the system changes with respect to each strategy parameter
   dR_dF, dX_dF, dY_dF = multiply_by_inverse_jacobian(drdot_dF, dxdot_dF, dydot_dF, J_inv, T,N,M)
-#  print('')
-#  print(dR_dF)
   dR_dH, dX_dH, dY_dH = multiply_by_inverse_jacobian(drdot_dH, dxdot_dH, dydot_dH, J_inv, T,N,M)
   dR_dW_p, dX_dW_p, dY_dW_p = multiply_by_inverse_jacobian(drdot_dW_p, dxdot_dW_p, dydot_dW_p, J_inv, T,N,M)
   dR_dW_n, dX_dW_n, dY_dW_n = multiply_by_inverse_jacobian(drdot_dW_n, dxdot_dW_n, dydot_dW_n, J_inv, T,N,M)
   dR_dK_p, dX_dK_p, dY_dK_p = multiply_by_inverse_jacobian(drdot_dK_p, dxdot_dK_p, dydot_dK_p, J_inv, T,N,M)
   dR_dK_n, dX_dK_n, dY_dK_n = multiply_by_inverse_jacobian(drdot_dK_n, dxdot_dK_n, dydot_dK_n, J_inv, T,N,M)
-  dR_dDjm, dX_dDjm, dY_dDjm = multiply_by_inverse_jacobian(drdot_dDjm, dxdot_dDjm, dydot_dDjm, J_inv, T,N,M)
-#  print('dR_dK_p:', str(dR_dK_p))
-#  print('dR_dK_n:', str(dR_dK_n))
-#  print('dX_dK_p:', str(dX_dK_p))
-#  print('dX_dK_n:', str(dX_dK_n))
-#  print('dY_dK_p:', str(dY_dK_p))
-#  print('dY_dK_n:', str(dY_dK_n))
+
+#  if np.sign(dR_dF)[0] != np.sign(dR_dK_p):
+#    dR_match[0] += 1
+
+
   # calculate gradients of objective function for one actor
   # for extraction
   # n's objective, l's strategy (same for resource users) n,l used to be i,j
@@ -189,15 +178,6 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
     assign_when(grad_e_K, grad_e_K_p, K_p[l]>=0)
     assign_when(grad_e_K, -grad_e_K_n, K_p[l]<0)
 
-    grad_e_Djm = de_dr[0,n] * dR_dDjm[l] + np.sum(np.multiply(np.reshape(de_dg[0,:,n]*dg_dy[:,n], (M,1,1)), dY_dDjm[:,l])
-            + np.sum(
-                np.multiply(  # Both factors need to be kmji
-                    np.reshape(np.multiply(de_dg[:,:,n],dg_dF[:,:,n]*F[:,:,n]), (N,M,1,1)),
-                    dX_dDjm[:,l:l+1,:,:]
-                )
-            ,axis=0)  # Sum over k
-        ,axis=0)
-
 
   if beta_hats[0,n] > 0:  # Check if we are optimizing n's access
 
@@ -257,14 +237,6 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
     assign_when(grad_a_K, grad_a_K_p, K_p[l]>=0)
     assign_when(grad_a_K, -grad_a_K_n, K_p[l]<0)
 
-    grad_a_Djm = da_dr[0,n] * dR_dDjm[l] + np.sum(np.multiply(np.reshape(da_dp[0,:,n]*dp_dy[:,n], (M,1,1)),dY_dDjm[:,l])
-          + np.sum(
-              np.multiply(
-                np.reshape(np.multiply(da_dp[:,:,n],dp_dH[:,:,n]*H[:,:,n]),(N,M,1,1)),
-                dX_dDjm[:,l:l+1,:,:]
-              ),axis=0)
-          ,axis=0)
-
 #  print(np.concatenate((grad_e_F.flatten(),
 #                           grad_e_H.flatten(),
 #                           grad_e_W.flatten(),
@@ -276,22 +248,19 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
     return np.concatenate(((grad_a_F + grad_e_F).flatten(),
                            (grad_a_H + grad_e_H).flatten(),
                            (grad_a_W + grad_e_W).flatten(),
-                           (grad_a_K + grad_e_K).flatten(),
-                           (grad_a_Djm + grad_e_Djm).flatten()))
+                           (grad_a_K + grad_e_K).flatten()))
   elif betas[0,n] > 0:
     # objective function gradient for extractors
     return np.concatenate((grad_e_F.flatten(),
                            grad_e_H.flatten(),
                            grad_e_W.flatten(),
-                           grad_e_K.flatten(),
-                           grad_e_Djm.flatten()))
+                           grad_e_K.flatten()))
   elif beta_hats[0,n] > 0:
     # objective function gradient for accessors
     return np.concatenate((grad_a_F.flatten(),
                            grad_a_H.flatten(),
                            grad_a_W.flatten(),
-                           grad_a_K.flatten(),
-                           grad_a_Djm.flatten()))
+                           grad_a_K.flatten()))
 
 
 
