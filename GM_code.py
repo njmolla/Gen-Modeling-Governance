@@ -187,6 +187,7 @@ def run_multiple(size,C,num_samples,filename=None,record_data=False):
   '''
   Run num_samples samples and return the proportion of webs that are stable.
   '''
+  np.random.seed(0)
   num_stable_webs = 0
   num_converged = 0
   # record information for the correlation experiment
@@ -227,7 +228,7 @@ def run_multiple(size,C,num_samples,filename=None,record_data=False):
     N3 = np.sum(rand2 > 0.66)
     N = N1 + N2 + N3 + K # total number of actors
     T = N + M + 1 # total number of state variables
-#    print((N1,N2,N3,K,M))
+    print((N1,N2,N3,K,M))
     try:
       result = sample(N1,N2,N3,K,M,T,C)
     except Exception as e:

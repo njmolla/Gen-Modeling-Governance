@@ -6,7 +6,8 @@ from numba import jit
 #@jit(nopython=True)
 def objective_grad(strategy, n, l, J, N,K,M,T,
     phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
-    F,H,W,K_p,dR_match):
+    F,H,W,K_p,dR_match,drdot_dF, dxdot_dF, dydot_dF, drdot_dH, dxdot_dH, dydot_dH, drdot_dW_p, dxdot_dW_p, dydot_dW_p, drdot_dW_n, dxdot_dW_n, dydot_dW_n,drdot_dK_p,
+    dxdot_dK_p, dydot_dK_p, drdot_dK_n, dxdot_dK_n, dydot_dK_n):
   '''
   inputs:
     strategy for a single actor (flattened)
@@ -35,48 +36,6 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
   # Compute inverse Jacobian
   J_inv = np.linalg.inv(J)
 
-  #TO DO: This section doesn't need to be calculated every time (except for dxdot_dws)
-  # Compute how the rhs of system changes with respect to each strategy parameter
-  drdot_dF = -phi*np.multiply(psis.reshape(1,1,N),np.multiply(de_dg,dg_dF))
-  dxdot_dF = np.zeros([N,N,M,N])
-#  for i in range(N):
-#    dxdot_dF[i,:,:,i] = alphas[0,i]*betas[0,i]*db_de[0,i]*de_dg[0,:,i]*dg_dF[:,:,i]
-  dxdot_dF[np.arange(0,N),:,:,np.arange(0,N)] = np.transpose(np.multiply(
-             #n k m (gets rid of last index)
-        np.reshape(alphas*betas*db_de, (1,1,N)),
-                    # 1n    1n    1n
-        np.multiply(de_dg,dg_dF)
-                  # 1mn    kmn
-      ), (2,0,1))  # transpose kmn -> nkm
-
-  dydot_dF = np.zeros([M,N,M,N])
-
-  drdot_dH = np.zeros([N,M,N])
-  dxdot_dH = np.zeros([N,N,M,N])
-  dxdot_dH[np.arange(0,N),:,:,np.arange(0,N)] = np.transpose(np.multiply(np.reshape(alphas*beta_hats*dq_da,(1,1,N)),
-                                                             np.multiply(da_dp,dp_dH)), (2,0,1))
-  dydot_dH = np.zeros([M,N,M,N])
-
-  drdot_dW_p = np.zeros([N,N])
-  dxdot_dW_p = np.zeros([N,N,N]) # dxdot_n/dW_k,i is nxkxi
-  dxdot_dW_p[np.arange(0,N),:,np.arange(0,N)] = np.transpose(np.multiply(alphas*beta_tildes,np.multiply(sigmas,dc_dw_p)))
-  dydot_dW_p = np.zeros([M,N,N])
-
-  drdot_dW_n = np.zeros([N,N])
-  dxdot_dW_n = np.zeros([N,N,N])
-  dxdot_dW_n[np.arange(0,N),:,np.arange(0,N)] = np.transpose(np.multiply(-alphas*etas,np.multiply(lambdas,dc_dw_n)))
-  dydot_dW_n = np.zeros([M,N,N])
-
-  drdot_dK_p = np.zeros([N,M])
-  dxdot_dK_p = np.zeros([N,N,M])
-  dydot_dK_p = np.zeros([M,N,M])
-  # result is mxn
-  dydot_dK_p[np.arange(0,M),:,np.arange(0,M)] = np.transpose(np.multiply(mus,di_dK_p))
-
-  drdot_dK_n = np.zeros([N,M])
-  dxdot_dK_n = np.zeros([N,N,M])
-  dydot_dK_n = np.zeros([M,N,M])
-  dydot_dK_n[np.arange(0,M),:,np.arange(0,M)] = np.transpose(np.multiply(-mus,di_dK_n))
 
   ## Compute how the steady state of the system changes with respect to each strategy parameter
   dR_dF, dX_dF, dY_dF = multiply_by_inverse_jacobian(drdot_dF, dxdot_dF, dydot_dF, J_inv, T,N,M)

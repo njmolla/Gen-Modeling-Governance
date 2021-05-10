@@ -43,7 +43,7 @@ def determine_stability(N,K,M,T,
         - np.multiply(etas,lambdas*dc_dw_n*W_n)
       ))
 
-#  # dx•/dx for n = i (overwrite the diagonal)
+##  # dx•/dx for n = i (overwrite the diagonal)
 #  for i in range(N):
 #    J[i+1,i+1] = alphas[0,i]*(betas[0,i]*db_de[0,i]*np.sum(de_dg[i,:,i]*dg_dF[i,:,i]*F[i,:,i]) + beta_hats[0,i]*dq_da[0,i]*np.sum(da_dp[i,:,i]*dp_dH[i,:,i]*H[i,:,i])-eta_bars[i]*dl_dx[i])
 
@@ -77,7 +77,7 @@ def determine_stability(N,K,M,T,
 #  # dy•/dy for m = j
 #  for i in range(M):
 #    J[-M+i:,-M+i:] = mus[0,i]*(di_dy_p[0,i] - di_dy_n[0,i])
-##
+
   indices = np.arange(N+1,T)  # Access the diagonal of the governing agency part.
   J[indices,indices] = mus[0]*(di_dy_p - di_dy_n)[0]
 

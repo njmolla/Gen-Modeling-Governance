@@ -25,7 +25,8 @@ def boundary_projection(mu, strategy, plane):
 
 def grad_descent_constrained(initial_point, alpha, n, l, J, N,K,M,T,
     phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
-    F,H,W,K_p,dR_match):
+    F,H,W,K_p,dR_match,drdot_dF,dxdot_dF, dydot_dF, drdot_dH, dxdot_dH, dydot_dH, drdot_dW_p, dxdot_dW_p, dydot_dW_p, drdot_dW_n, dxdot_dW_n, dydot_dW_n,drdot_dK_p,
+    dxdot_dK_p, dydot_dK_p, drdot_dK_n, dxdot_dK_n, dydot_dK_n):
   '''
   inputs:
     initial_point is the initial strategy
@@ -44,7 +45,8 @@ def grad_descent_constrained(initial_point, alpha, n, l, J, N,K,M,T,
 
   grad = objective_grad(x, n, l, J, N,K,M,T,
     phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
-    F,H,W,K_p,dR_match)
+    F,H,W,K_p,dR_match,drdot_dF, dxdot_dF, dydot_dF, drdot_dH, dxdot_dH, dydot_dH, drdot_dW_p, dxdot_dW_p, dydot_dW_p, drdot_dW_n, dxdot_dW_n, dydot_dW_n,drdot_dK_p,
+    dxdot_dK_p, dydot_dK_p, drdot_dK_n, dxdot_dK_n, dydot_dK_n)
 
   d = len(x)
     # Follow the projected gradient for a fixed step size alpha
@@ -69,6 +71,52 @@ def grad_descent_constrained(initial_point, alpha, n, l, J, N,K,M,T,
 
   return x, grad # normally return only x
 
+def compute_RHS_gradient(N,K,M,T,
+    phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,
+    dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n):
+  # Compute how the rhs of system changes with respect to each strategy parameter
+  drdot_dF = -phi*np.multiply(psis.reshape(1,1,N),np.multiply(de_dg,dg_dF))
+  dxdot_dF = np.zeros([N,N,M,N])
+#  for i in range(N):
+#    dxdot_dF[i,:,:,i] = alphas[0,i]*betas[0,i]*db_de[0,i]*de_dg[0,:,i]*dg_dF[:,:,i]
+  dxdot_dF[np.arange(0,N),:,:,np.arange(0,N)] = np.transpose(np.multiply(
+             #n k m (gets rid of last index)
+        np.reshape(alphas*betas*db_de, (1,1,N)),
+                    # 1n    1n    1n
+        np.multiply(de_dg,dg_dF)
+                  # 1mn    kmn
+      ), (2,0,1))  # transpose kmn -> nkm
+
+  dydot_dF = np.zeros([M,N,M,N])
+
+  drdot_dH = np.zeros([N,M,N])
+  dxdot_dH = np.zeros([N,N,M,N])
+  dxdot_dH[np.arange(0,N),:,:,np.arange(0,N)] = np.transpose(np.multiply(np.reshape(alphas*beta_hats*dq_da,(1,1,N)),
+                                                             np.multiply(da_dp,dp_dH)), (2,0,1))
+  dydot_dH = np.zeros([M,N,M,N])
+
+  drdot_dW_p = np.zeros([N,N])
+  dxdot_dW_p = np.zeros([N,N,N]) # dxdot_n/dW_k,i is nxkxi
+  dxdot_dW_p[np.arange(0,N),:,np.arange(0,N)] = np.transpose(np.multiply(alphas*beta_tildes,np.multiply(sigmas,dc_dw_p)))
+  dydot_dW_p = np.zeros([M,N,N])
+
+  drdot_dW_n = np.zeros([N,N])
+  dxdot_dW_n = np.zeros([N,N,N])
+  dxdot_dW_n[np.arange(0,N),:,np.arange(0,N)] = np.transpose(np.multiply(-alphas*etas,np.multiply(lambdas,dc_dw_n)))
+  dydot_dW_n = np.zeros([M,N,N])
+
+  drdot_dK_p = np.zeros([N,M])
+  dxdot_dK_p = np.zeros([N,N,M])
+  dydot_dK_p = np.zeros([M,N,M])
+  # result is mxn
+  dydot_dK_p[np.arange(0,M),:,np.arange(0,M)] = np.transpose(np.multiply(mus,di_dK_p))
+
+  drdot_dK_n = np.zeros([N,M])
+  dxdot_dK_n = np.zeros([N,N,M])
+  dydot_dK_n = np.zeros([M,N,M])
+  dydot_dK_n[np.arange(0,M),:,np.arange(0,M)] = np.transpose(np.multiply(-mus,di_dK_n))
+  return (drdot_dF, dxdot_dF, dydot_dF, drdot_dH, dxdot_dH, dydot_dH, drdot_dW_p, dxdot_dW_p, dydot_dW_p, drdot_dW_n, dxdot_dW_n, dydot_dW_n,drdot_dK_p,
+          dxdot_dK_p, dydot_dK_p, drdot_dK_n, dxdot_dK_n, dydot_dK_n)
 
 def nash_equilibrium(max_iters,J,N,K,M,T,
     phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,
@@ -111,6 +159,10 @@ def nash_equilibrium(max_iters,J,N,K,M,T,
   grad_history = []
   sum_below_1 = True
   #
+  (drdot_dF, dxdot_dF, dydot_dF, drdot_dH, dxdot_dH, dydot_dH, drdot_dW_p, dxdot_dW_p, dydot_dW_p, drdot_dW_n, dxdot_dW_n, dydot_dW_n,drdot_dK_p,
+  dxdot_dK_p, dydot_dK_p, drdot_dK_n, dxdot_dK_n, dydot_dK_n) = compute_RHS_gradient(N,K,M,T, phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,
+                                                            lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,
+                                                            dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n)
   while (max_diff > tolerance or sum_below_1) and iterations < max_iters:
     # Loop through each actor i
     for i in range(N):
@@ -121,7 +173,8 @@ def nash_equilibrium(max_iters,J,N,K,M,T,
 
       new_strategy, raw_grad = grad_descent_constrained(strategy[i], alpha, objective, i, J, N,K,M,T,
           phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
-          F,H,W,K_p,dR_match)
+          F,H,W,K_p,dR_match,drdot_dF, dxdot_dF, dydot_dF, drdot_dH, dxdot_dH, dydot_dH, drdot_dW_p, dxdot_dW_p, dydot_dW_p, drdot_dW_n, dxdot_dW_n, dydot_dW_n,drdot_dK_p,
+          dxdot_dK_p, dydot_dK_p, drdot_dK_n, dxdot_dK_n, dydot_dK_n)
 
 #      if np.sign(F)[0] != np.sign(K_p):
 #        match[0] += 1
@@ -135,7 +188,10 @@ def nash_equilibrium(max_iters,J,N,K,M,T,
       if np.count_nonzero(new_strategy[2*M*N:2*M*N+N]) < np.count_nonzero(strategy[i][2*M*N:2*M*N+N]) and (np.any(sigmas>0) or np.any(lambdas > 0)) :
         sigmas = correct_scale_params(sigmas,W[i],i)
         lambdas = correct_scale_params(lambdas,W[i],i)
-
+        (drdot_dF, dxdot_dF, dydot_dF, drdot_dH, dxdot_dH, dydot_dH, drdot_dW_p, dxdot_dW_p, dydot_dW_p, drdot_dW_n, dxdot_dW_n, dydot_dW_n,drdot_dK_p,
+         dxdot_dK_p, dydot_dK_p, drdot_dK_n, dxdot_dK_n, dydot_dK_n) = compute_RHS_gradient(N,K,M,T, phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,
+                                                            lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,
+                                                            dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n)
       # update strategy and gradient for this actor
       strategy[i] = new_strategy
       grad[i] = raw_grad
