@@ -3,7 +3,7 @@ from compute_J import determine_stability
 from compute_J import assign_when
 from numba import jit
 
-#@jit(nopython=True)
+@jit(nopython=True)
 def objective_grad(strategy, n, l, J, N,K,M,T,
     phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
     F,H,W,K_p,dR_match,drdot_dF, dxdot_dF, dydot_dF, drdot_dH, dxdot_dH, dydot_dH, drdot_dW_p, dxdot_dW_p, dydot_dW_p, drdot_dW_n, dxdot_dW_n, dydot_dW_n,drdot_dK_p,
@@ -23,10 +23,10 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
   return the gradient of the objective function at that point for that actor
   '''
   # Unpack strategy parameters.
-  F[l] = strategy[0:M*N].reshape([M,N])
-  H[l] = strategy[M*N:2*M*N].reshape([M,N])
-  W[l] = strategy[2*M*N:2*M*N+N].reshape([N])
-  K_p[l] = strategy[2*M*N+N:2*M*N+N+M].reshape([M])
+  F[l] = strategy[0:M*N].reshape((M,N))
+  H[l] = strategy[M*N:2*M*N].reshape((M,N))
+  W[l] = strategy[2*M*N:2*M*N+N].reshape((N))
+  K_p[l] = strategy[2*M*N+N:2*M*N+N+M].reshape((M))
 
   # Compute Jacobian
   J = determine_stability(N,K,M,T,
@@ -222,18 +222,21 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
                            grad_a_K.flatten()))
 
 
-
+@jit(nopython=True)
 def multiply_by_inverse_jacobian(drdot_dp, dxdot_dp, dydot_dp, J_inv, T, N, M):
   # shape is the shape of strategy parameter p. For example, D_jm is (N,M,M).
   shape = drdot_dp.shape
   # dSdot_dp == how steady state changes wrt p, packed into one variable
-  dSdot_dp = np.concatenate(
-                 (np.broadcast_to(drdot_dp, (1, *shape)),
+  drdot_dp_unbroadcasted = drdot_dp
+  drdot_dp = np.zeros((1, *shape))
+  drdot_dp[0] = drdot_dp_unbroadcasted
+  dSdot_dp = np.concatenate((
+                 drdot_dp,
                  dxdot_dp,
                  dydot_dp),
              axis=0)
 
-  dSdot_dp = dSdot_dp.reshape(T, np.prod(shape))  # this should already be true
+#  dSdot_dp = dSdot_dp.reshape(T, np.prod(shape))  # this should already be true
 
   # do the actual computation
   dSS_dp = -J_inv @ dSdot_dp

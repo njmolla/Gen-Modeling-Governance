@@ -2,7 +2,7 @@ import numpy as np
 from numba import jit
 
 
-#@jit(nopython=True)
+@jit(nopython=True)
 def determine_stability(N,K,M,T,
 	  phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
 	  F,H,W,K_p):
@@ -43,17 +43,17 @@ def determine_stability(N,K,M,T,
         - np.multiply(etas,lambdas*dc_dw_n*W_n)
       ))
 
-##  # dx•/dx for n = i (overwrite the diagonal)
-#  for i in range(N):
-#    J[i+1,i+1] = alphas[0,i]*(betas[0,i]*db_de[0,i]*np.sum(de_dg[i,:,i]*dg_dF[i,:,i]*F[i,:,i]) + beta_hats[0,i]*dq_da[0,i]*np.sum(da_dp[i,:,i]*dp_dH[i,:,i]*H[i,:,i])-eta_bars[i]*dl_dx[i])
+#  # dx•/dx for n = i (overwrite the diagonal)
+  for i in range(N):
+    J[i+1,i+1] = alphas[0,i]*(betas[0,i]*db_de[0,i]*np.sum(de_dg[i,:,i]*dg_dF[i,:,i]*F[i,:,i]) + beta_hats[0,i]*dq_da[0,i]*np.sum(da_dp[i,:,i]*dp_dH[i,:,i]*H[i,:,i])-eta_bars[i]*dl_dx[i])
 
-  indices = np.arange(1,N+1)  # Access the diagonal of the actor part.
-  J[indices,indices] = alphas[0] * (
-        (betas*db_de)[0]*np.sum(de_dg[0]*dg_dF[np.arange(N),:,np.arange(N)].transpose()*F[np.arange(N),:,np.arange(N)].transpose(),axis=0)
-        #                                                          mxn                                 mxn
-        + (beta_hats*dq_da)[0]*np.sum(da_dp[0]*dp_dH[np.arange(N),:,np.arange(N)].transpose()*H[np.arange(N),:,np.arange(N)].transpose(),axis=0)
-        - eta_bars*dl_dx
-      )
+#  indices = np.arange(1,N+1)  # Access the diagonal of the actor part.
+#  J[indices,indices] = alphas[0] * (
+#        (betas*db_de)[0]*np.sum(de_dg[0]*dg_dF[np.arange(N),:,np.arange(N)].transpose()*F[np.arange(N),:,np.arange(N)].transpose(),axis=0)
+#        #                                                          mxn                                 mxn
+#        + (beta_hats*dq_da)[0]*np.sum(da_dp[0]*dp_dH[np.arange(N),:,np.arange(N)].transpose()*H[np.arange(N),:,np.arange(N)].transpose(),axis=0)
+#        - eta_bars*dl_dx
+#      )
 
   # dx•/dy
   J[1:N+1,N+1:] = np.transpose(alphas * (
@@ -75,11 +75,11 @@ def determine_stability(N,K,M,T,
 
 
 #  # dy•/dy for m = j
-#  for i in range(M):
-#    J[-M+i:,-M+i:] = mus[0,i]*(di_dy_p[0,i] - di_dy_n[0,i])
+  for i in range(M):
+    J[-M+i:,-M+i:] = mus[0,i]*(di_dy_p[0,i] - di_dy_n[0,i])
 
-  indices = np.arange(N+1,T)  # Access the diagonal of the governing agency part.
-  J[indices,indices] = mus[0]*(di_dy_p - di_dy_n)[0]
+#  indices = np.arange(N+1,T)  # Access the diagonal of the governing agency part.
+#  J[indices,indices] = mus[0]*(di_dy_p - di_dy_n)[0]
 
   return J
 

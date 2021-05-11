@@ -65,7 +65,6 @@ def go_fast(a): # Function is compiled and runs in machine code
 #  product[product>5000] = 1000
   assign_scalar_when(product, 1000, product > 5000)
   np.concatenate((np.ones((2,2)),np.zeros((2,2))))
-  np.sum(product)
   #np.diag(product)
 #    trace = 0.0
   for i in range(a.shape[0]):
