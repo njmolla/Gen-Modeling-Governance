@@ -3,25 +3,12 @@ from compute_J import determine_stability
 from compute_J import assign_when
 from numba import jit
 
-@jit(nopython=True)
-def objective_grad(strategy, n, l, J, N,K,M,T,
+#@jit(nopython=True)
+def SS_derivatives(strategy, n, l, J, N,K,M,T,
     phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
     F,H,W,K_p,dR_match,drdot_dF, dxdot_dF, dydot_dF, drdot_dH, dxdot_dH, dydot_dH, drdot_dW_p, dxdot_dW_p, dydot_dW_p, drdot_dW_n, dxdot_dW_n, dydot_dW_n,drdot_dK_p,
     dxdot_dK_p, dydot_dK_p, drdot_dK_n, dxdot_dK_n, dydot_dK_n):
-  '''
-  inputs:
-    strategy for a single actor (flattened)
-    n is the actor whose objective we want to optimize
-    l is the actor whose strategy it is
-    J is the Jacobian (is it calculated or passed in?????)  TODO: remove this parameter
-    N,K,M,T meta parameters
-    scale parameters
-    exponent parameters
-    strategy parameters
-  modified variables:
-    strategy parameters F,H,W,K_p,D_jm will be modified to match input strategy for l
-  return the gradient of the objective function at that point for that actor
-  '''
+
   # Unpack strategy parameters.
   F[l] = strategy[0:M*N].reshape((M,N))
   H[l] = strategy[M*N:2*M*N].reshape((M,N))
@@ -44,11 +31,28 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
   dR_dW_n, dX_dW_n, dY_dW_n = multiply_by_inverse_jacobian(drdot_dW_n, dxdot_dW_n, dydot_dW_n, J_inv, T,N,M)
   dR_dK_p, dX_dK_p, dY_dK_p = multiply_by_inverse_jacobian(drdot_dK_p, dxdot_dK_p, dydot_dK_p, J_inv, T,N,M)
   dR_dK_n, dX_dK_n, dY_dK_n = multiply_by_inverse_jacobian(drdot_dK_n, dxdot_dK_n, dydot_dK_n, J_inv, T,N,M)
+  print(dR_dF, dX_dF, dY_dF, dR_dH, dX_dH, dY_dH, dR_dW_p, dX_dW_p, dY_dW_p, dR_dW_n, dX_dW_n, dY_dW_n, dR_dK_p, dX_dK_p, dY_dK_p, dR_dK_n, dX_dK_n, dY_dK_n)
+  return dR_dF, dX_dF, dY_dF, dR_dH, dX_dH, dY_dH, dR_dW_p, dX_dW_p, dY_dW_p, dR_dW_n, dX_dW_n, dY_dW_n, dR_dK_p, dX_dK_p, dY_dK_p, dR_dK_n, dX_dK_n, dY_dK_n
 
 #  if np.sign(dR_dF)[0] != np.sign(dR_dK_p):
 #    dR_match[0] += 1
-
-
+def objective_grad(strategy, n, l, J, N,K,M,T,
+    phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
+    F,H,W,K_p,dR_match,dR_dF, dX_dF, dY_dF, dR_dH, dX_dH, dY_dH, dR_dW_p, dX_dW_p, dY_dW_p, dR_dW_n, dX_dW_n, dY_dW_n, dR_dK_p, dX_dK_p, dY_dK_p, dR_dK_n, dX_dK_n, dY_dK_n):
+  '''
+  inputs:
+    strategy for a single actor (flattened)
+    n is the actor whose objective we want to optimize
+    l is the actor whose strategy it is
+    J is the Jacobian (is it calculated or passed in?????)  TODO: remove this parameter
+    N,K,M,T meta parameters
+    scale parameters
+    exponent parameters
+    strategy parameters
+  modified variables:
+    strategy parameters F,H,W,K_p,D_jm will be modified to match input strategy for l
+  return the gradient of the objective function at that point for that actor
+  '''
   # calculate gradients of objective function for one actor
   # for extraction
   # n's objective, l's strategy (same for resource users) n,l used to be i,j
@@ -222,19 +226,26 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
                            grad_a_K.flatten()))
 
 
-@jit(nopython=True)
+#@jit(nopython=True)
 def multiply_by_inverse_jacobian(drdot_dp, dxdot_dp, dydot_dp, J_inv, T, N, M):
   # shape is the shape of strategy parameter p. For example, D_jm is (N,M,M).
   shape = drdot_dp.shape
   # dSdot_dp == how steady state changes wrt p, packed into one variable
-  drdot_dp_unbroadcasted = drdot_dp
-  drdot_dp = np.zeros((1, *shape))
-  drdot_dp[0] = drdot_dp_unbroadcasted
-  dSdot_dp = np.concatenate((
-                 drdot_dp,
+#  drdot_dp_unbroadcasted = drdot_dp
+#  drdot_dp = np.zeros((1, *shape))
+#  drdot_dp[0] = drdot_dp_unbroadcasted
+#  dSdot_dp = np.concatenate((
+#                 drdot_dp,
+#                 dxdot_dp,
+#                 dydot_dp),
+#             axis=0)
+  dSdot_dp = np.concatenate(
+                 (np.broadcast_to(drdot_dp, (1, *shape)),
                  dxdot_dp,
                  dydot_dp),
              axis=0)
+
+  dSdot_dp = dSdot_dp.reshape(T, np.prod(shape))  # this should already be true
 
 #  dSdot_dp = dSdot_dp.reshape(T, np.prod(shape))  # this should already be true
 

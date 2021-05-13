@@ -1,6 +1,7 @@
 import numpy as np
 from scipy import optimize
 from objective_gradient import objective_grad
+from objective_gradient import SS_derivatives
 import matplotlib.pyplot as plt
 
 def correct_scale_params(scale_params, alloc_params, i):
@@ -10,6 +11,7 @@ def correct_scale_params(scale_params, alloc_params, i):
   and sets scale parameters to 0 if the corresponding strategy parameters are 0, ensuring
   that the scale parameters still add to 1.
   '''
+  np.random.seed(0) # FOR DEBUGGING
   scale_params[:,i][alloc_params==0] = 0
   for i in range(sum(alloc_params==0)):
     scale_params[alloc_params==0][i][scale_params[alloc_params==0][i] != 0] \
@@ -42,22 +44,29 @@ def grad_descent_constrained(initial_point, alpha, n, l, J, N,K,M,T,
   '''
 
   x = initial_point  # strategy
-
+  # calculate how steady state changes with respect to strategy parameters
+  dR_dF, dX_dF, dY_dF, dR_dH, dX_dH, dY_dH, dR_dW_p, dX_dW_p, dY_dW_p, dR_dW_n, dX_dW_n, dY_dW_n, dR_dK_p, dX_dK_p, dY_dK_p, dR_dK_n, dX_dK_n, dY_dK_n\
+  = SS_derivatives(x, n, l, J, N,K,M,T,phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,
+                   db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,F,H,W,K_p,dR_match,drdot_dF, dxdot_dF, dydot_dF,
+                   drdot_dH, dxdot_dH, dydot_dH, drdot_dW_p, dxdot_dW_p, dydot_dW_p, drdot_dW_n, dxdot_dW_n, dydot_dW_n,drdot_dK_p, dxdot_dK_p, dydot_dK_p,
+                   drdot_dK_n, dxdot_dK_n, dydot_dK_n)
+  # calculate how objective changes wrt strategy parameters (the gradient)
   grad = objective_grad(x, n, l, J, N,K,M,T,
     phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
-    F,H,W,K_p,dR_match,drdot_dF, dxdot_dF, dydot_dF, drdot_dH, dxdot_dH, dydot_dH, drdot_dW_p, dxdot_dW_p, dydot_dW_p, drdot_dW_n, dxdot_dW_n, dydot_dW_n,drdot_dK_p,
-    dxdot_dK_p, dydot_dK_p, drdot_dK_n, dxdot_dK_n, dydot_dK_n)
+    F,H,W,K_p,dR_match,dR_dF, dX_dF, dY_dF, dR_dH, dX_dH, dY_dH, dR_dW_p, dX_dW_p, dY_dW_p, dR_dW_n, dX_dW_n, dY_dW_n, dR_dK_p, dX_dK_p, dY_dK_p, dR_dK_n, dX_dK_n, dY_dK_n)
 
   d = len(x)
     # Follow the projected gradient for a fixed step size alpha
   x = x + alpha*grad
-  plane = np.sign(x) # added
-  plane[abs(plane)<0.00001] = 1 # added
+  #print(x)
+  plane = np.sign(x)
+  plane[abs(plane)<0.00001] = 1
   if sum(abs(x)) > 1:
     #project point onto plane
-    x = x + plane*(1-sum(plane*x))/d # added
-    x[abs(x)<0.001] = 0
-    x /= np.sum(x*plane) # Normalize to be sure (get some errors without this)
+    x = x + plane*(1-sum(plane*x))/d
+    #x[abs(x)<0.001] = 0
+    if np.sum(x*plane) != 0:
+      x /= np.sum(x*plane) # Normalize to be sure (get some errors without this)
 
     # If strategy does not have all efforts >= 0, project onto space of legal strategies
     if np.any(x*plane < -0.0001):
@@ -141,11 +150,10 @@ def nash_equilibrium(max_iters,J,N,K,M,T,
   alpha = 0.01 # was 0.0001
 
   # Initialize strategy
-#  strategy = np.random.uniform(-1,0,size = (N, 2*M*N + N + M + M**2)) #FOR DEBUGGING
-#  strategy /= np.sum(abs(np.squeeze(strategy)),axis=0)
   strategy = np.zeros((N, 2*M*N + N + M))
 
   # sample to get bridging org objectives
+  np.random.seed(0) # FOR DEBUGGING
   objectives = np.random.randint(0,N-K,size = K)
   tolerance = alpha/10 #
   max_diff = 1  # arbitrary initial value, List of differences in euclidean distance between strategies in consecutive iterations

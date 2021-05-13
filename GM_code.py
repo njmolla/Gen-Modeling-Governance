@@ -147,7 +147,7 @@ def sample(N1,N2,N3,K,M,T,C):
     # ------------------------------------------------------------------------
 
     # find nash equilibrium strategies
-    F,H,W,K_p,sigmas, lambdas, converged, strategy_history, grad = nash_equilibrium(5000,J,N,K,M,T,
+    F,H,W,K_p,sigmas, lambdas, converged, strategy_history, grad = nash_equilibrium(5,J,N,K,M,T,
     phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,
     dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n, match, dR_match, Jac_condition)
 
@@ -187,7 +187,6 @@ def run_multiple(size,C,num_samples,filename=None,record_data=False):
   '''
   Run num_samples samples and return the proportion of webs that are stable.
   '''
-  np.random.seed(0)
   num_stable_webs = 0
   num_converged = 0
   # record information for the correlation experiment
@@ -201,6 +200,7 @@ def run_multiple(size,C,num_samples,filename=None,record_data=False):
 #  num_matched = 0
 #  num_condition_met = 0
   for i in range(num_samples):
+    np.random.seed(i)
     # Need at least 2 resource users and one gov org
     N = 2
     M = 1
@@ -282,25 +282,21 @@ def run_once(N1,N2,N3,K,M,T,C):
       phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
       F,H,W,K_p) = sample(N1,N2,N3,K,M,T,C)
 
-#  total_connectance = (np.count_nonzero(de_dg) + np.count_nonzero(da_dp)
-#      + np.count_nonzero(F_p) + np.count_nonzero(F_n) + np.count_nonzero(H_p) + np.count_nonzero(H_p)
-#      + np.count_nonzero(W_p) + np.count_nonzero(W_n) + np.count_nonzero(K_p) + np.count_nonzero(K_n)
-#      + np.count_nonzero(omegas) + np.count_nonzero(epsilons) + np.count_nonzero(D_jm)) \
-#      /(np.size(de_dg) + np.size(da_dp) + np.size(F_p) + np.size(F_n) + np.size(H_p) + np.size(H_n)
-#      + np.size(W_p) + np.size(W_n) + np.size(K_p) + np.size(K_n) + np.size(omegas)
-#      + np.size(epsilons) + np.size(D_jm))
+  total_connectance = (np.count_nonzero(de_dg) + np.count_nonzero(da_dp)
+      + np.count_nonzero(F) + np.count_nonzero(H) + np.count_nonzero(W) + np.count_nonzero(K_p)) \
+      /(np.size(de_dg) + np.size(da_dp) + np.size(F) + np.size(H) + np.size(W) + np.size(K_p))
 
-  return (N1,N2,N3,K,M,T,C,stability, J, converged, strategy_history, grad,
+  return (N1,N2,N3,K,M,T,C,stability, J, converged, strategy_history, grad, total_connectance,
       phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
       F,H,W,K_p)
 
 
 def main():
   # Size of system
-  N1 = 2 # number of resource users that benefit from extraction only
+  N1 = 5 # number of resource users that benefit from extraction only
   N2 = 0 # number of users with both extractive and non-extractive use
-  N3 = 0  # number of users with only non-extractive use
-  K = 0 # number of bridging orgs
+  N3 = 3  # number of users with only non-extractive use
+  K = 1 # number of bridging orgs
   M = 1  # number of gov orgs
   T = N1 + N2 + N3 + K + M + 1  # total number of state variables
 
@@ -312,7 +308,7 @@ def main():
 
 
 if __name__ == "__main__":
-  (N1,N2,N3,K,M,T,C, stability, J, converged, strategy_history, grad,
+  (N1,N2,N3,K,M,T,C,stability, J, converged, strategy_history, grad, total_connectance,
       phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
       F,H,W,K_p) = main()
 
