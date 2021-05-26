@@ -6,7 +6,7 @@ from numba import jit
 #@jit(nopython=True)
 def SS_derivatives(strategy, n, l, J, N,K,M,T,
     phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
-    F,H,W,K_p,dR_match,drdot_dF, dxdot_dF, dydot_dF, drdot_dH, dxdot_dH, dydot_dH, drdot_dW_p, dxdot_dW_p, dydot_dW_p, drdot_dW_n, dxdot_dW_n, dydot_dW_n,drdot_dK_p,
+    F,H,W,K_p,drdot_dF, dxdot_dF, dydot_dF, drdot_dH, dxdot_dH, dydot_dH, drdot_dW_p, dxdot_dW_p, dydot_dW_p, drdot_dW_n, dxdot_dW_n, dydot_dW_n,drdot_dK_p,
     dxdot_dK_p, dydot_dK_p, drdot_dK_n, dxdot_dK_n, dydot_dK_n):
 
   # Unpack strategy parameters.
@@ -31,14 +31,13 @@ def SS_derivatives(strategy, n, l, J, N,K,M,T,
   dR_dW_n, dX_dW_n, dY_dW_n = multiply_by_inverse_jacobian(drdot_dW_n, dxdot_dW_n, dydot_dW_n, J_inv, T,N,M)
   dR_dK_p, dX_dK_p, dY_dK_p = multiply_by_inverse_jacobian(drdot_dK_p, dxdot_dK_p, dydot_dK_p, J_inv, T,N,M)
   dR_dK_n, dX_dK_n, dY_dK_n = multiply_by_inverse_jacobian(drdot_dK_n, dxdot_dK_n, dydot_dK_n, J_inv, T,N,M)
-  print(dR_dF, dX_dF, dY_dF, dR_dH, dX_dH, dY_dH, dR_dW_p, dX_dW_p, dY_dW_p, dR_dW_n, dX_dW_n, dY_dW_n, dR_dK_p, dX_dK_p, dY_dK_p, dR_dK_n, dX_dK_n, dY_dK_n)
+  #print(dR_dF, dX_dF, dY_dF, dR_dH, dX_dH, dY_dH, dR_dW_p, dX_dW_p, dY_dW_p, dR_dW_n, dX_dW_n, dY_dW_n, dR_dK_p, dX_dK_p, dY_dK_p, dR_dK_n, dX_dK_n, dY_dK_n)
   return dR_dF, dX_dF, dY_dF, dR_dH, dX_dH, dY_dH, dR_dW_p, dX_dW_p, dY_dW_p, dR_dW_n, dX_dW_n, dY_dW_n, dR_dK_p, dX_dK_p, dY_dK_p, dR_dK_n, dX_dK_n, dY_dK_n
 
-#  if np.sign(dR_dF)[0] != np.sign(dR_dK_p):
-#    dR_match[0] += 1
+@jit(nopython=True)
 def objective_grad(strategy, n, l, J, N,K,M,T,
     phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
-    F,H,W,K_p,dR_match,dR_dF, dX_dF, dY_dF, dR_dH, dX_dH, dY_dH, dR_dW_p, dX_dW_p, dY_dW_p, dR_dW_n, dX_dW_n, dY_dW_n, dR_dK_p, dX_dK_p, dY_dK_p, dR_dK_n, dX_dK_n, dY_dK_n):
+    F,H,W,K_p,dR_dF, dX_dF, dY_dF, dR_dH, dX_dH, dY_dH, dR_dW_p, dX_dW_p, dY_dW_p, dR_dW_n, dX_dW_n, dY_dW_n, dR_dK_p, dX_dK_p, dY_dK_p, dR_dK_n, dX_dK_n, dY_dK_n):
   '''
   inputs:
     strategy for a single actor (flattened)
@@ -56,8 +55,13 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
   # calculate gradients of objective function for one actor
   # for extraction
   # n's objective, l's strategy (same for resource users) n,l used to be i,j
-  if betas[0,n] > 0.000001:  # Check if we are optimizing n's extraction
+  if betas[0,n] > 0:  # Check if we are optimizing n's extraction
                              #### TODO: replace 0.000001 with named constant, put elsewhere too
+
+    np.reshape(de_dg[0,:,n]*dg_dy[:,n], (M,1,1))
+
+
+    np.reshape(np.multiply(de_dg[:,:,n],dg_dF[:,:,n]*F[:,:,n]), (N,M,1,1))
     # jxi
     grad_e_F = de_dr[0,n] * dR_dF[l] + np.sum(np.multiply(np.reshape(de_dg[0,:,n]*dg_dy[:,n], (M,1,1)), dY_dF[:,l])
                          # scalar                               jxi         # m                             mji
@@ -200,11 +204,6 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
     assign_when(grad_a_K, grad_a_K_p, K_p[l]>=0)
     assign_when(grad_a_K, -grad_a_K_n, K_p[l]<0)
 
-#  print(np.concatenate((grad_e_F.flatten(),
-#                           grad_e_H.flatten(),
-#                           grad_e_W.flatten(),
-#                           grad_e_K.flatten(),
-#                           grad_e_Djm.flatten())))
 
   if betas[0,n] > 0 and beta_hats[0,n] > 0:  # Check if n is extractor and accessor
     # objective function gradient for RUs that extract and access the resource
@@ -268,4 +267,3 @@ def multiply_by_inverse_jacobian(drdot_dp, dxdot_dp, dydot_dp, J_inv, T, N, M):
   dX_dW_n = dSS_dW_n.reshape(T,N,N)[1:N+1]
   dY_dW_n = dSS_dW_n.reshape(T,N,N)[N+1:N+1+M]
 """
-

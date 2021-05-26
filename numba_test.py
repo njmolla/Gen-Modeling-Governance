@@ -2,7 +2,7 @@ from numba import jit
 import numpy as np
 import time
 
-x = np.arange(1000).reshape(10, 10, 10)
+x = np.arange(10000).reshape(100, 100)
 
 """
 This does
@@ -60,15 +60,16 @@ print("Elapsed (without using jit) = %s" % (end - start))
 
 @jit(nopython=True)
 def go_fast(a): # Function is compiled and runs in machine code
-  b = 2
+  b = np.ones((np.shape(a)))*2
   product = a*b
+  (a*b).reshape((1000,10))
+  np.reshape(a*b,(1000,10))
 #  product[product>5000] = 1000
-  assign_scalar_when(product, 1000, product > 5000)
   np.concatenate((np.ones((2,2)),np.zeros((2,2))))
   #np.diag(product)
 #    trace = 0.0
-  for i in range(a.shape[0]):
-    a[i,:,i] = 3
+#    for i in range(a.shape[0]):
+#        trace += np.tanh(a[i, i])
   return product
 
 # DO NOT REPORT THIS... COMPILATION TIME IS INCLUDED IN THE EXECUTION TIME!

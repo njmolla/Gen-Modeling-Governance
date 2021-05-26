@@ -11,7 +11,6 @@ def correct_scale_params(scale_params, alloc_params, i):
   and sets scale parameters to 0 if the corresponding strategy parameters are 0, ensuring
   that the scale parameters still add to 1.
   '''
-  np.random.seed(0) # FOR DEBUGGING
   scale_params[:,i][alloc_params==0] = 0
   for i in range(sum(alloc_params==0)):
     scale_params[alloc_params==0][i][scale_params[alloc_params==0][i] != 0] \
@@ -25,9 +24,9 @@ def boundary_projection(mu, strategy, plane):
   return np.sum(np.maximum(strategy*plane - mu, 0)) - 1
 
 
-def grad_descent_constrained(initial_point, alpha, n, l, J, N,K,M,T,
+def grad_descent_constrained(initial_point, alpha, v, n, l, J, N,K,M,T,
     phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
-    F,H,W,K_p,dR_match,drdot_dF,dxdot_dF, dydot_dF, drdot_dH, dxdot_dH, dydot_dH, drdot_dW_p, dxdot_dW_p, dydot_dW_p, drdot_dW_n, dxdot_dW_n, dydot_dW_n,drdot_dK_p,
+    F,H,W,K_p,drdot_dF,dxdot_dF, dydot_dF, drdot_dH, dxdot_dH, dydot_dH, drdot_dW_p, dxdot_dW_p, dydot_dW_p, drdot_dW_n, dxdot_dW_n, dydot_dW_n,drdot_dK_p,
     dxdot_dK_p, dydot_dK_p, drdot_dK_n, dxdot_dK_n, dydot_dK_n):
   '''
   inputs:
@@ -47,24 +46,25 @@ def grad_descent_constrained(initial_point, alpha, n, l, J, N,K,M,T,
   # calculate how steady state changes with respect to strategy parameters
   dR_dF, dX_dF, dY_dF, dR_dH, dX_dH, dY_dH, dR_dW_p, dX_dW_p, dY_dW_p, dR_dW_n, dX_dW_n, dY_dW_n, dR_dK_p, dX_dK_p, dY_dK_p, dR_dK_n, dX_dK_n, dY_dK_n\
   = SS_derivatives(x, n, l, J, N,K,M,T,phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,
-                   db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,F,H,W,K_p,dR_match,drdot_dF, dxdot_dF, dydot_dF,
+                   db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,F,H,W,K_p,drdot_dF, dxdot_dF, dydot_dF,
                    drdot_dH, dxdot_dH, dydot_dH, drdot_dW_p, dxdot_dW_p, dydot_dW_p, drdot_dW_n, dxdot_dW_n, dydot_dW_n,drdot_dK_p, dxdot_dK_p, dydot_dK_p,
                    drdot_dK_n, dxdot_dK_n, dydot_dK_n)
   # calculate how objective changes wrt strategy parameters (the gradient)
   grad = objective_grad(x, n, l, J, N,K,M,T,
     phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
-    F,H,W,K_p,dR_match,dR_dF, dX_dF, dY_dF, dR_dH, dX_dH, dY_dH, dR_dW_p, dX_dW_p, dY_dW_p, dR_dW_n, dX_dW_n, dY_dW_n, dR_dK_p, dX_dK_p, dY_dK_p, dR_dK_n, dX_dK_n, dY_dK_n)
+    F,H,W,K_p,dR_dF, dX_dF, dY_dF, dR_dH, dX_dH, dY_dH, dR_dW_p, dX_dW_p, dY_dW_p, dR_dW_n, dX_dW_n, dY_dW_n, dR_dK_p, dX_dK_p, dY_dK_p, dR_dK_n, dX_dK_n, dY_dK_n)
 
   d = len(x)
-    # Follow the projected gradient for a fixed step size alpha
-  x = x + alpha*grad
+  v[n] = 0.9*v[n] + alpha*grad
+  # Follow the projected gradient for a fixed step size alpha
+  x = x + v[n]
   #print(x)
   plane = np.sign(x)
   plane[abs(plane)<0.00001] = 1
   if sum(abs(x)) > 1:
     #project point onto plane
     x = x + plane*(1-sum(plane*x))/d
-    #x[abs(x)<0.001] = 0
+    x[abs(x)<0.00001] = 0
     if np.sum(x*plane) != 0:
       x /= np.sum(x*plane) # Normalize to be sure (get some errors without this)
 
@@ -78,7 +78,7 @@ def grad_descent_constrained(initial_point, alpha, n, l, J, N,K,M,T,
         raise Exception('bisection bounds did not work')
       x = plane * np.maximum(x*plane - mu, 0)
 
-  return x, grad # normally return only x
+  return x, v # normally return only x
 
 def compute_RHS_gradient(N,K,M,T,
     phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,
@@ -129,7 +129,7 @@ def compute_RHS_gradient(N,K,M,T,
 
 def nash_equilibrium(max_iters,J,N,K,M,T,
     phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,
-    dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n, match, dR_match, Jac_condition):
+    dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n):
   '''
   inputs:
     max_iters
@@ -147,13 +147,12 @@ def nash_equilibrium(max_iters,J,N,K,M,T,
   W = np.zeros((N,N))  # effort for collaboration. W_i,n is ixn $
   K_p = np.zeros((N,M))  # effort for more influence for gov orgs $
   # step size
-  alpha = 0.01 # was 0.0001
+  alpha = 0.0001
 
   # Initialize strategy
   strategy = np.zeros((N, 2*M*N + N + M))
-
+  v = np.zeros((N, 2*M*N + N + M)) # velocity for gradient descent with momentum
   # sample to get bridging org objectives
-  np.random.seed(0) # FOR DEBUGGING
   objectives = np.random.randint(0,N-K,size = K)
   tolerance = alpha/10 #
   max_diff = 1  # arbitrary initial value, List of differences in euclidean distance between strategies in consecutive iterations
@@ -179,9 +178,9 @@ def nash_equilibrium(max_iters,J,N,K,M,T,
       else:
         objective = objectives[i-(N-K)]
 
-      new_strategy, raw_grad = grad_descent_constrained(strategy[i], alpha, objective, i, J, N,K,M,T,
+      new_strategy, v = grad_descent_constrained(strategy[i], alpha, v, objective, i, J, N,K,M,T,
           phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
-          F,H,W,K_p,dR_match,drdot_dF, dxdot_dF, dydot_dF, drdot_dH, dxdot_dH, dydot_dH, drdot_dW_p, dxdot_dW_p, dydot_dW_p, drdot_dW_n, dxdot_dW_n, dydot_dW_n,drdot_dK_p,
+          F,H,W,K_p,drdot_dF, dxdot_dF, dydot_dF, drdot_dH, dxdot_dH, dydot_dH, drdot_dW_p, dxdot_dW_p, dydot_dW_p, drdot_dW_n, dxdot_dW_n, dydot_dW_n,drdot_dK_p,
           dxdot_dK_p, dydot_dK_p, drdot_dK_n, dxdot_dK_n, dydot_dK_n)
 
 #      if np.sign(F)[0] != np.sign(K_p):
@@ -200,9 +199,10 @@ def nash_equilibrium(max_iters,J,N,K,M,T,
          dxdot_dK_p, dydot_dK_p, drdot_dK_n, dxdot_dK_n, dydot_dK_n) = compute_RHS_gradient(N,K,M,T, phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,
                                                             lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,
                                                             dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n)
+        #print('updating scale params')
       # update strategy and gradient for this actor
       strategy[i] = new_strategy
-      grad[i] = raw_grad
+      grad[i] = v[i]
 
     # update strategies for all actors
     strategy_history.append(strategy.copy())
@@ -229,5 +229,3 @@ def nash_equilibrium(max_iters,J,N,K,M,T,
   plt.plot(dist_from_conv/max(dist_from_conv),'.')
   plt.plot(strategy_sum)
   return F,H,W,K_p, sigmas,lambdas, converged, strategy_history, grad_history
-
-

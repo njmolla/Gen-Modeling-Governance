@@ -43,9 +43,26 @@ def determine_stability(N,K,M,T,
         - np.multiply(etas,lambdas*dc_dw_n*W_n)
       ))
 
-#  # dx•/dx for n = i (overwrite the diagonal)
+ # dx•/dx for n = i (overwrite the diagonal)
   for i in range(N):
-    J[i+1,i+1] = alphas[0,i]*(betas[0,i]*db_de[0,i]*np.sum(de_dg[i,:,i]*dg_dF[i,:,i]*F[i,:,i]) + beta_hats[0,i]*dq_da[0,i]*np.sum(da_dp[i,:,i]*dp_dH[i,:,i]*H[i,:,i])-eta_bars[i]*dl_dx[i])
+    alphas[0,i]
+    betas[0,i]
+    db_de[0,i]
+    de_dg[0,:,i]
+    dg_dF[i,:,i]
+    F[i,:,i]
+    beta_hats[0,i]
+    dq_da[0,i]
+    da_dp[0,:,i]
+    dp_dH[i,:,i]
+    H[i,:,i]
+    eta_bars[i]
+    dl_dx[i]
+    J[i+1,i+1] = alphas[0,i] * (
+                     betas[0,i]     * db_de[0,i] * np.sum(de_dg[0,:,i] * dg_dF[i,:,i] * F[i,:,i])
+                   + beta_hats[0,i] * dq_da[0,i] * np.sum(da_dp[0,:,i] * dp_dH[i,:,i] * H[i,:,i])
+                   - eta_bars[i] * dl_dx[i]
+                 )
 
 #  indices = np.arange(1,N+1)  # Access the diagonal of the actor part.
 #  J[indices,indices] = alphas[0] * (
@@ -74,7 +91,7 @@ def determine_stability(N,K,M,T,
   # dy•/dy = 0 for m != j
 
 
-#  # dy•/dy for m = j
+  # dy•/dy for m = j
   for i in range(M):
     J[-M+i:,-M+i:] = mus[0,i]*(di_dy_p[0,i] - di_dy_n[0,i])
 
@@ -88,7 +105,6 @@ This does
    lhs[conditions] = rhs[conditions]
 lhs and rhs are any numpy arrays with the same shape
 conditions is a boolean numpy array with the same shape
-
 For example, to do
    x[x > 0] = y[x > 0]
 use
