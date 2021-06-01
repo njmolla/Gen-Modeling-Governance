@@ -65,7 +65,7 @@ def sample_exp_params(N1,N2,N3,K,M,T,C):
   # resample until at least one gov-extraction interaction
   while np.count_nonzero(links) == 0:
     links = np.random.rand(N1+N2) < C
-    print('resampling links')
+    #print('resampling links')
   de_dg[:,:,0:N1+N2][:,:,links] = np.random.uniform(-1,1,(1,M,sum(links)))
   dg_dF = np.random.uniform(0,2,(N,M,N))  # dg_m,n/(dF_i,m,n * x_i) is ixmxn $
   dg_dy = np.random.rand(M,N)*2 # $
@@ -102,7 +102,7 @@ def fix_exp_params(N1,N2,N3,K,M,T,C):
   # resample until at least one gov-extraction interaction
   while np.count_nonzero(links) == 0:
     links = np.random.rand(N1+N2) < C
-    print('resampling links')
+    #print('resampling links')
   de_dg[:,:,0:N1+N2][:,:,links] = np.random.uniform(-1,1,(1,M,sum(links)))
   dg_dF = np.ones((N,M,N)) #np.random.uniform(0,2,(N,M,N))  # dg_m,n/(dF_i,m,n * x_i) is ixmxn $
   dg_dy = np.ones((M,N)) #np.random.rand(M,N)*2 #
@@ -166,7 +166,7 @@ def run_system(N1,N2,N3,K,M,T,C,sample_exp):
       J = determine_stability(N,K,M,T,
       phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
       F,H,W,K_p)
-      print('resampling resource params')
+      #print('resampling resource params')
     # resample all actor parameters if any dxdot_dx are positive
   #      while np.any(np.diagonal(J)[1:-M] > 0):
   #        db_de = np.random.uniform(-1,1,(1,N))
@@ -184,7 +184,7 @@ def run_system(N1,N2,N3,K,M,T,C,sample_exp):
       J = determine_stability(N,K,M,T,
       phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
       F,H,W,K_p)
-      print('resampling gov params')
+      #print('resampling gov params')
 
 
     # ------------------------------------------------------------------------
@@ -322,7 +322,7 @@ def run_once(N1,N2,N3,K,M,T,C,sample_exp=True):
   '''
   Do a single run and return more detailed output.
   '''
-  np.random.seed(1)
+  np.random.seed(667)
 
   (stability, J, converged, strategy_history, grad, total_connectance,
       phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
@@ -336,15 +336,15 @@ def run_once(N1,N2,N3,K,M,T,C,sample_exp=True):
 
 def main():
   # Size of system
-  N1 = 8 # number of resource users that benefit from extraction only
-  N2 = 0 # number of users with both extractive and non-extractive use
+  N1 = 2 # number of resource users that benefit from extraction only
+  N2 = 1 # number of users with both extractive and non-extractive use
   N3 = 0  # number of users with only non-extractive use
   K = 0 # number of bridging orgs
   M = 2  # number of gov orgs
   T = N1 + N2 + N3 + K + M + 1  # total number of state variables
 
   # Connectance of system (for different interactions)
-  C = 0.5  # Connectance between governance organizations and resource users.
+  C = 0.1  # Connectance between governance organizations and resource users.
             # (proportion of resource extraction/access interactions influenced by governance)
 
   return run_once(N1,N2,N3,K,M,T,C)

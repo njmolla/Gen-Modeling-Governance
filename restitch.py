@@ -7,25 +7,28 @@ import pandas as pd
 
 def _key_func(file):
   """Returns the number portion of filename."""
-  return int(file.stem[len('convergence_') : ]) #int(file[len(folder + 'PSW_'):len(file)])
+  return int(file.stem[len('data_') : ]) #int(file[len(folder + 'PSW_'):len(file)])
 
 
-folder = 'colormap_data_updated\\'
+folder = 'colormap_expanded\\'
 num_points = 32
-folder = Path.cwd().joinpath('colormap_data_updated')
-file_names = sorted(folder.glob('convergence_*'), key=_key_func)
+folder = Path.cwd().joinpath('colormap_expanded')
+file_names = sorted(folder.glob('data_*'), key=_key_func)
 
 
 frames = []
+data = pd.DataFrame(columns = ['Total_connectance','size','stability','converged'])
 
 for file in file_names:
   with open(file, 'rb') as f:
-    data = pickle.load(f)
-  frames.append(data)
+    df = pickle.load(f)
+  frames.append(df)
+
+data.append(frames)
 #PSW = np.array(PSW).reshape(10,32)/200
 
 # bin data based on the total connectance
-ranges = pd.cut(data['Total Connectance'],bins=30)
+ranges = pd.cut(data['Total_connectance'],bins=30)
 # group by total connectance and size, unstack to get 2d "z" for colormap
 num_stable = data.groupby([ranges,'size'])['stability'].agg(['sum']).unstack().values
 num_total = data.groupby([ranges,'size'])['stability'].agg(['count']).unstack().values

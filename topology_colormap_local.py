@@ -1,40 +1,65 @@
-from GM_code import run_multiple
+from GM_code import run_system
+from sample_setup import sample_composition
 import numpy as np
-import csv
+import pickle
+import pandas as pd
+
+num_processors = 96
+
+size_ranges = np.arange(5,20,1)
+connectance_ranges = np.linspace(0.1,0.8,32)
+
+def run_cm_samples(size,C,num_samples,stabilities,total_connectances,convergences):
+  '''
+  Run num_samples samples and return total connectance and stability data
+  '''
+  for i in range(num_samples):
+    N,N1,N2,N3,K,M,T = sample_composition(size)
+    print((N1,N2,N3,K,M,T,C))
+    try:
+      result = run_system(N1,N2,N3,K,M,T,C,sample_exp=False)
+    except Exception as e:
+      print(e)
+      continue
+    stability = result[0] # stability is the first return value
+    converged = result[2]
+    connectance = result[5]
+    stabilities.append(stability)
+    total_connectances.append(connectance)
+    convergences.append(converged)
 
 
-size_ranges = np.arange(5,7,1)
-connectance_ranges = np.linspace(0.2,0.6,2)
-PSW = np.zeros((len(size_ranges),10))
+num_samples = 2
 
-np.random.seed(0)
-for i, size in enumerate(size_ranges):
-  for j,C1 in enumerate(connectance_ranges):
-    # Need at least 2 resource users and one gov org
-    N = 2
-    M = 1
-    rand = np.random.rand(size-3)
-    N += np.sum(rand < 0.6)
-    K = np.sum(rand < 0.8) - np.sum(rand < 0.6)
-    M += np.sum(rand > 0.8)
-    rand2 = np.random.rand(N-1)
-    # choose at random whether guaranteed extractor is just extractor or extractor + accessor
-    rand3 = np.random.rand(1)
-    if rand3 < 0.5:
-      N1 = 1 + np.sum(rand2 < 0.33)
-      N2 = np.sum(rand2 > 0.33) - np.sum(rand2 > 0.66)
-    else:
-      N1 = np.sum(rand2 < 0.33)
-      N2 = 1 + np.sum(rand2 > 0.33) - np.sum(rand2 > 0.66)
-    N3 = np.sum(rand2 > 0.66)
-    N = N1 + N2 + N3 + K # total number of resource users
-    T = N + M + 1 # total number of state variables
+cells_per_row = len(connectance_ranges)
+cells_per_processor = len(size_ranges)*cells_per_row/num_processors
+processors_per_row = cells_per_row/cells_per_processor
 
-    C2 = 0.2 # gov org-gov org connectance
-    print((N1,N2,N3,K,M))
-    PSW[i,j] = run_multiple(N1,N2,N3,K,M,T,C1,C2,1)
-    print(PSW)
+processor_num = 0
+size = size_ranges[int(processor_num//processors_per_row)] # number of the row
+start_index = int(cells_per_processor*(processor_num%processors_per_row))
+connectances = connectance_ranges[start_index:int(start_index+cells_per_processor)]
 
-    with open('PSW.csv', 'w+') as f:
-      csvwriter = csv.writer(f)
-      csvwriter.writerows(PSW)
+np.random.seed(processor_num+666)
+
+
+# dataframe and lists to store results from each processor
+data = pd.DataFrame(columns = ['Total_connectance','size','stability','converged'])
+data['size'] = np.ones(num_samples*len(connectances))*size
+
+stabilities = []
+total_connectances = []
+convergences = []
+
+for i, connectance in enumerate(connectances):
+  run_cm_samples(size,connectance,num_samples,stabilities,total_connectances,convergences)
+  print(stabilities)
+
+
+print('adding data')
+data['stability'] = stabilities
+data['Total_connectance'] = total_connectances
+data['converged'] = convergences
+
+with open('data_%s'%(processor_num), 'wb') as f:
+  pickle.dump(data, f)
