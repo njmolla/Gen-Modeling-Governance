@@ -193,7 +193,7 @@ def run_system(N1,N2,N3,K,M,T,C,sample_exp):
 
     # find nash equilibrium strategies
     if N<10:
-      max_steps = 1000*(N-1)
+      max_steps = 1000*(N)
     else:
       max_steps = 10000
     F,H,W,K_p,sigmas, lambdas, converged, strategy_history, grad = nash_equilibrium(max_steps,J,N,K,M,T,

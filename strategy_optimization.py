@@ -154,10 +154,10 @@ def nash_equilibrium(max_iters,J,N,K,M,T,
   v = np.zeros((N, 2*M*N + N + M)) # velocity for gradient descent with momentum
   # sample to get bridging org objectives
   objectives = np.random.randint(0,N-K,size = K)
-  tolerance = alpha/10 #
+  tolerance = alpha #
   max_diff = 1  # arbitrary initial value, List of differences in euclidean distance between strategies in consecutive iterations
   iterations = 0
-  strategy_diffs = []
+#  strategy_diffs = []
   strategy_history = []  # a list of the strategies at each iteration
   strategy_sum = []
   strategy_history.append(strategy.copy())
@@ -210,22 +210,22 @@ def nash_equilibrium(max_iters,J,N,K,M,T,
     strategy_sum.append(min(np.sum(abs(strategy), axis = 1)))
     if np.all(abs(np.sum(abs(strategy), axis = 1) - 1) < 0.01):
       sum_below_1 = False
-    if iterations >= 30:
+#    if iterations >= 30:
       # compute difference in strategies
-      strategy_history_10 = np.array(strategy_history[-30:]).reshape((30,N*(2*M*N + N + M)))
-      strategy_diff = np.linalg.norm(strategy_history_10[:29,:]-strategy_history_10[-1,:], axis = 1)
-      strategy_diffs.append(strategy_diff[-1])
-      max_diff = max(strategy_diff)
+#      strategy_history_10 = np.array(strategy_history[-30:]).reshape((30,N*(2*M*N + N + M)))
+#      strategy_diff = np.linalg.norm(strategy_history_10[:29,:]-strategy_history_10[-1,:], axis = 1)
+#      strategy_diffs.append(strategy_diff[-1])
+#      max_diff = max(strategy_diff)
 
     iterations += 1
     if iterations == max_iters - 1:
       converged = False
-  plt.figure()
-  strategy_diffs = [0]*31 + strategy_diffs
-  plt.plot(np.array(strategy_diffs)/max(strategy_diffs))
-  strategy_history = np.array(strategy_history).reshape(len(strategy_history),N*(2*M*N + N + M))
-  grad_history = np.array(grad_history).reshape(len(grad_history),N*(2*M*N + N + M))
-  dist_from_conv = np.linalg.norm(strategy_history[-1] - strategy_history, axis = 1)
-  plt.plot(dist_from_conv/max(dist_from_conv),'.')
-  plt.plot(strategy_sum)
+#  plt.figure()
+#  strategy_diffs = [0]*31 + strategy_diffs
+#  plt.plot(np.array(strategy_diffs)/max(strategy_diffs))
+#  strategy_history = np.array(strategy_history).reshape(len(strategy_history),N*(2*M*N + N + M))
+#  grad_history = np.array(grad_history).reshape(len(grad_history),N*(2*M*N + N + M))
+#  dist_from_conv = np.linalg.norm(strategy_history[-1] - strategy_history, axis = 1)
+#  plt.plot(dist_from_conv/max(dist_from_conv),'.')
+#  plt.plot(strategy_sum)
   return F,H,W,K_p, sigmas,lambdas, converged, strategy_history, grad_history
