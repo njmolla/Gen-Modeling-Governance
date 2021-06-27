@@ -42,13 +42,13 @@ def sample_scale_params(N1,N2,N3,K,M,T,C):
     beta_tildes[0,N-K:N] = np.ones(K) # one for all bridging orgs
 
   sigmas = np.zeros([N,N]) # sigma_k,n is kxn $
-  sigmas = np.random.dirichlet(np.ones(N),N)
+  sigmas = np.transpose(np.random.dirichlet(np.ones(N),N))
 
   etas = np.random.rand(1,N) # $
   eta_bars = (1-etas)[0] # TODO: fix for 1 actor/no undermining
 
   lambdas = np.zeros([N,N])  # lambda_k,n is kxn $
-  lambdas = np.random.dirichlet(np.ones(N),N)
+  lambdas = np.transpose(np.random.dirichlet(np.ones(N),N))
 
   mus = np.random.rand(1,M) # $
   return phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus
@@ -226,6 +226,10 @@ def run_system(N1,N2,N3,K,M,T,C,sample_exp):
     stability = False  # unstable if real part is positive, inconclusive if 0
 
   # compute actual total connectance
+  F[np.abs(F)<1e-5] = 0
+  H[np.abs(H)<1e-5] = 0
+  W[np.abs(W)<1e-5] = 0
+  K_p[np.abs(K_p)<1e-5] = 0
   total_connectance = (np.count_nonzero(de_dg) + np.count_nonzero(da_dp)
     + np.count_nonzero(F) + np.count_nonzero(H) + np.count_nonzero(W) + np.count_nonzero(K_p)) \
     /(np.size(de_dg) + np.size(da_dp) + np.size(F) + np.size(H) + np.size(W) + np.size(K_p))
