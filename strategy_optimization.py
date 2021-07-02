@@ -4,7 +4,7 @@ from objective_gradient import objective_grad
 from objective_gradient import SS_derivatives
 # import matplotlib.pyplot as plt
 
-def correct_scale_params(sigmas, lambdas, alloc_params, i, betas, beta_hats, beta_tildes, etas, eta_bars, zero_betas):
+def correct_scale_params(sigmas, lambdas, alloc_params, i, betas, beta_hats, beta_tildes, etas, eta_bars, has_zero_betas):
   '''
   Corrects scale parameters (either sigmas or lambdas) to be consisent with optimization
   results. Takes in scale parameters (2d) and strategy parameters for a particular actor i (1d),
@@ -12,28 +12,40 @@ def correct_scale_params(sigmas, lambdas, alloc_params, i, betas, beta_hats, bet
   that the scale parameters still add to 1.
   '''
   new_zeros_sigmas = (alloc_params <= 0)
-  sigmas[i,new_zeros_sigmas] = 0
+  sigmas[i, new_zeros_sigmas] = 0
   all_zeros_sigmas = (np.sum(sigmas, axis=0) == 0)
-  # for all columns that now have new zeros (but are not all zeros), renormalize to make sure the rows still sum to 1
 
-  sigmas[:, ~all_zeros_sigmas & new_zeros_sigmas] /= np.broadcast_to(np.expand_dims(np.sum(sigmas[:, ~all_zeros_sigmas & new_zeros_sigmas], axis = 0),
-                                                                              axis=0), np.shape(sigmas[:, ~all_zeros_sigmas & new_zeros_sigmas]))
-  if np.any(np.bitwise_and(beta_hats[0,all_zeros_sigmas] == 0, betas[0,all_zeros_sigmas]==0)):
-    zero_betas = True
+  # for all columns that now have new zeros (but are not all zeros), renormalize to make sure the rows still sum to 1
+  sigmas[:, ~all_zeros_sigmas & new_zeros_sigmas] /= np.broadcast_to(
+          np.expand_dims(
+              np.sum(sigmas[:, ~all_zeros_sigmas & new_zeros_sigmas], axis = 0),
+              axis=0
+          ),
+          np.shape(sigmas[:, ~all_zeros_sigmas & new_zeros_sigmas])
+      )
+  if np.any(np.bitwise_and(beta_hats[0, all_zeros_sigmas] == 0, betas[0, all_zeros_sigmas]==0)):
+    has_zero_betas = True
   else:
     beta_tildes[0,all_zeros_sigmas] = 0
     beta_hats[0,all_zeros_sigmas] /= (beta_hats[0,all_zeros_sigmas] + betas[0,all_zeros_sigmas])
     betas[0,all_zeros_sigmas] /= (betas[0,all_zeros_sigmas] + beta_hats[0,all_zeros_sigmas])                                                                            
   
   new_zeros_lambdas = (alloc_params >= 0)
-  lambdas[i,new_zeros_sigmas] = 0
+  lambdas[i, new_zeros_sigmas] = 0
   all_zeros_lambdas = (np.sum(lambdas, axis=0) == 0)
   # for all columns that now have new zeros (but are not all zeros), renormalize to make sure the rows still sum to 1
 
-  lambdas[:, ~all_zeros_lambdas & new_zeros_lambdas] /= np.broadcast_to(np.expand_dims(np.sum(lambdas[:, ~all_zeros_lambdas & new_zeros_lambdas], axis = 0),
-                                                                              axis=0), np.shape(lambdas[:, ~all_zeros_lambdas & new_zeros_lambdas]))
-  etas[0,all_zeros_lambdas] = 0      
-  eta_bars[all_zeros_lambdas] = 1  
+  lambdas[:, ~all_zeros_lambdas & new_zeros_lambdas] /= np.broadcast_to(
+          np.expand_dims(
+              np.sum(lambdas[:, ~all_zeros_lambdas & new_zeros_lambdas], axis = 0),
+              axis=0
+          ),
+          np.shape(lambdas[:, ~all_zeros_lambdas & new_zeros_lambdas])
+      )
+
+  etas[0, all_zeros_lambdas] = 0
+  eta_bars[all_zeros_lambdas] = 1
+  return has_zero_betas
   
 
 # If strategy does not have all efforts >= 0, project onto space of legal strategies
@@ -182,7 +194,7 @@ def nash_equilibrium(max_iters,J,N,K,M,T,
   grad = np.zeros(np.shape(strategy))
   grad_history = []
   sum_below_1 = True
-  zero_betas = False
+  has_zero_betas = False
   #
   (drdot_dF, dxdot_dF, dydot_dF, drdot_dH, dxdot_dH, dydot_dH, drdot_dW_p, dxdot_dW_p, dydot_dW_p, drdot_dW_n, dxdot_dW_n, dydot_dW_n,drdot_dK_p,
   dxdot_dK_p, dydot_dK_p, drdot_dK_n, dxdot_dK_n, dydot_dK_n) = compute_RHS_gradient(N,K,M,T, phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,
@@ -212,12 +224,13 @@ def nash_equilibrium(max_iters,J,N,K,M,T,
       # strategy parameters.
       
       # if there are more zeros in the new strategy than the previous, or changes in the sign, and the scale parameters aren't already all zeros
-      if np.count_nonzero(new_strategy[2*M*N:2*M*N+N]) < np.count_nonzero(strategy[i][2*M*N:2*M*N+N]) or np.any(strategy[i][2*M*N:2*M*N+N]*new_strategy[2*M*N:2*M*N+N]<0) and (np.any(sigmas>0) or np.any(lambdas > 0)) :
-        correct_scale_params(sigmas, lambdas, new_strategy[2*M*N:2*M*N+N], i, betas, beta_hats, beta_tildes, etas, eta_bars, zero_betas)
+      if np.count_nonzero(new_strategy[2*M*N:2*M*N+N]) < np.count_nonzero(strategy[i][2*M*N:2*M*N+N]) or np.any(strategy[i][2*M*N:2*M*N+N] * new_strategy[2*M*N:2*M*N+N] < 0) and (np.any(sigmas > 0) or np.any(lambdas > 0)) :
+        has_zero_betas = correct_scale_params(sigmas, lambdas, new_strategy[2*M*N:2*M*N+N], i, betas, beta_hats, beta_tildes, etas, eta_bars, has_zero_betas)
+
         (drdot_dF, dxdot_dF, dydot_dF, drdot_dH, dxdot_dH, dydot_dH, drdot_dW_p, dxdot_dW_p, dydot_dW_p, drdot_dW_n, dxdot_dW_n, dydot_dW_n,drdot_dK_p,
-         dxdot_dK_p, dydot_dK_p, drdot_dK_n, dxdot_dK_n, dydot_dK_n) = compute_RHS_gradient(N,K,M,T, phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,
-                                                            lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,
-                                                            dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n)
+         dxdot_dK_p, dydot_dK_p, drdot_dK_n, dxdot_dK_n, dydot_dK_n) = compute_RHS_gradient(N,K,M,T,
+                                                                                            phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,
+                                                                                            ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n)
         #print('updating scale params')
       # update strategy and gradient for this actor
       strategy[i] = new_strategy
@@ -239,7 +252,7 @@ def nash_equilibrium(max_iters,J,N,K,M,T,
     iterations += 1
     if iterations == max_iters - 1:
       converged = False
-  if zero_betas == True:
+  if has_zero_betas == True:
     print('sum of betas = 0!!')
   # plt.figure()
   # strategy_diffs = [0]*31 + strategy_diffs
