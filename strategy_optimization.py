@@ -197,9 +197,9 @@ def nash_equilibrium(max_iters,J,N,K,M,T,
   has_zero_betas = False
   #
   (drdot_dF, dxdot_dF, dydot_dF, drdot_dH, dxdot_dH, dydot_dH, drdot_dW_p, dxdot_dW_p, dydot_dW_p, drdot_dW_n, dxdot_dW_n, dydot_dW_n,drdot_dK_p,
-  dxdot_dK_p, dydot_dK_p, drdot_dK_n, dxdot_dK_n, dydot_dK_n) = compute_RHS_gradient(N,K,M,T, phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,
-                                                            lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,
-                                                            dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n)
+  dxdot_dK_p, dydot_dK_p, drdot_dK_n, dxdot_dK_n, dydot_dK_n) = compute_RHS_gradient(N,K,M,T,
+                                                                                     phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,
+                                                                                     ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n)
   while (max_diff > tolerance or sum_below_1) and iterations < max_iters:
     # Loop through each actor i
     for i in range(N):
