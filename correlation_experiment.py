@@ -39,7 +39,6 @@ for i in range(model_runs_per_proc):
   stability_list.append(stability)
 
 
-  print('adding data')
   param_series = pd.Series(result[6:], index = data.columns[:-1])
   data = data.append(param_series, ignore_index=True)
 

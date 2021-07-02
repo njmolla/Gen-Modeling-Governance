@@ -11,7 +11,7 @@ def compute_correlation(param, stability):
   denom = len(stability)*np.std(param)*np.std(stability)
   return np.where(denom < 1e-10, 0, num/denom)
 #
-folder = 'Correlation_15\Run2_fixed_comp'
+folder = 'Correlation_15//run2_scale_params_corrected2'
 files = glob.glob(folder + '\corr_data' + '_*')
 frames = []
 for file in files:
@@ -20,42 +20,61 @@ for file in files:
     frames.append(df)
 
 data = pd.concat(frames, ignore_index = True)
-
+# dataframes to save the aggregated values of the parameters
+mean_values = pd.DataFrame(columns = data.columns)
+var_values = pd.DataFrame(columns = data.columns)
 
 correlation_df = pd.DataFrame (index = data.columns[:-1], columns = ['Correlation', 'CI'])
 
 for column in data.columns[:-1]:
   param = np.stack(data[column].values)
-  axes = np.arange(len(np.shape(param)))[1:]
-  param_averaged = np.mean(param, axis = tuple(axes)) #np.mean(np.var(data[column][i],axis=0))
+  axes = np.arange(len(np.shape(param)))[1:] # shape is # of points x dimensions of the parameter itself
+  param_averaged = np.mean(param, axis = tuple(axes))
+  mean_values[column] = param_averaged
+  # 1d case
+  if len(np.shape(np.squeeze(param)))==2:
+    param_var = np.std(np.squeeze(param), axis=1)
+    var_values[column] = param_var
+  # 2d case
+  elif len(np.shape(np.squeeze(param)))==3:
+    param_var = np.std(np.mean(np.squeeze(param),axis=2),axis=1)
+    var_values[column] = param_var
+  # 3d case (dg_dF, dp_dH, F, H)
+  elif len(np.shape(np.squeeze(param)))==4:
+    param_var = np.std(np.mean(np.squeeze(param),axis=(1,2)),axis=1)
+    var_values[column] = param_var
+  else:
+    param_var = np.zeros(len(param))
+    var_values[column] = param_var
   stability = data['stability'].values
+  
+  if column == ('de_dg' or 'dg_dy' or 'dp_dy' or 'da_dp'): # these are MxN
+    param_var = np.std(np.mean(np.squeeze(param),axis=1),axis=1)
   # compute correlation of parameter with stability
-  correlation_df['Correlation'][column] = compute_correlation(param_averaged, stability)
+  correlation_df['Correlation'][column] = compute_correlation(param_var, stability)
 
-#  # bootstrap 95% confidence intervals
-#  num_points = len(param)
-#  num_samples = 100
-#  sample_indices = np.random.randint(0,num_points,(num_points*num_samples)) # get indices for 100 samples of 1e6 each
-#  sample_params = param[sample_indices]
-#  sample_stability = stability_final[sample_indices]
-#  sample_params = np.reshape(sample_params, (num_samples,num_points))
-#  sample_stability = np.reshape(sample_stability, (num_samples,num_points))
-#  sample_corrs = np.zeros(num_samples)
-#  for i in range(num_samples):
-#    sample_corrs[i] = compute_correlation(sample_params[i],sample_stability[i])
-#  sorted_corrs = np.sort(sample_corrs)
-#  correlation_df['CI'][column] = [sorted_corrs[int(num_samples*0.025)],sorted_corrs[int(num_samples*0.975)]] # take 5th and 95th percentile of
-
-
-#with open("correlation_data_var_15", 'wb') as f:
-#  pickle.dump(correlation_df, f)
-
-#with open("correlation_data", 'rb') as f:
-#  correlation_df = pickle.load(f)
+# bootstrap 95% confidence intervals
+  param = mean_values[column].values
+  num_points = len(param)
+  num_samples = 100
+  sample_indices = np.random.randint(0,num_points,(num_points*num_samples)) # get indices for 100 samples of 1e6 each
+  sample_params = param[sample_indices]
+  sample_stability = stability[sample_indices]
+  sample_params = np.reshape(sample_params, (num_samples,num_points))
+  sample_stability = np.reshape(sample_stability, (num_samples,num_points))
+  sample_corrs = np.zeros(num_samples)
+  for i in range(num_samples):
+   sample_corrs[i] = compute_correlation(sample_params[i],sample_stability[i])
+  sorted_corrs = np.sort(sample_corrs)
+  correlation_df['CI'][column] = np.array([sorted_corrs[int(num_samples*0.025)],sorted_corrs[int(num_samples*0.975)]]) # take 5th and 95th percentile of
 
 
 corr = correlation_df['Correlation'].dropna()
+CI = correlation_df['CI'].dropna().values
+CI = np.stack(CI)
 corr_sorted = np.concatenate([np.sort(corr.values)[:5],np.sort(corr.values)[-5:]])
+label_indices = np.concatenate([np.argsort(corr.values)[:5],np.argsort(corr.values)[-5:]])
+CI = CI[label_indices]
 plt.figure()
 plt.bar(np.arange(len(corr_sorted)), corr_sorted, align='center', alpha=0.5)
 labels = [r'$\phi$', r'$\psi$', r'$\alpha$', r'$\beta$', r'$\hat{\beta}$',r'$\tilde{\beta}$',r'$\sigma$',r'$\eta$',r'$\lambda$',r'$\bar{\eta}$',r'$\mu$',r'$\dfrac{\partial s}{\partial r}$',
@@ -64,8 +83,8 @@ labels = [r'$\phi$', r'$\psi$', r'$\alpha$', r'$\beta$', r'$\hat{\beta}$',r'$\ti
           r'$\dfrac{\partial a}{\partial p}$',r'$\dfrac{\partial p}{\partial H}$',r'$\dfrac{\partial c}{\partial W_p}$',r'$\dfrac{\partial c}{\partial w_n}$',
           r'$\dfrac{\partial l}{\partial x}$',r'$\dfrac{\partial i}{\partial K_p}$',r'$\dfrac{\partial i}{\partial K_n}$',r'$\dfrac{\partial i}{\partial y_p}$',
           r'$\dfrac{\partial i}{\partial y_n}$','F','H','W','K']
-label_indices = np.concatenate([np.argsort(corr.values)[:5],np.argsort(corr.values)[-5:]])
-plt.xticks(np.arange(len(label_indices)), np.array(labels)[label_indices])
-plt.title('Correlation of parameters with stability')
 
+plt.xticks(np.arange(len(label_indices)), np.array(labels)[label_indices])
+plt.title('Correlation of standard deviation in parameters with stability')
+plt.savefig('Correlation_15_var.svg')
 plt.show()

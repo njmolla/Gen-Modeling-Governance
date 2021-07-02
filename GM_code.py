@@ -21,7 +21,9 @@ def sample_scale_params(N1,N2,N3,K,M,T,C):
 
   # beta parameters for extractors
   if N==1:
-    #special case if there is only one actor (no collaboration possible)
+    #special case if there is only one actor (no collaboration or undermining possible)
+    etas = np.zeros((N,N))
+    eta_bars = np.ones(N)
     if N1 == 1:
       betas[0] = 1
     elif N2 == 1:
@@ -40,12 +42,12 @@ def sample_scale_params(N1,N2,N3,K,M,T,C):
     beta_hats[0,N1+N2:N1+N2+N3] = 1 - beta_tildes[0,N1+N2:N1+N2+N3]
     # beta parameters for bridging organizations
     beta_tildes[0,N-K:N] = np.ones(K) # one for all bridging orgs
+    # loss scale parameters
+    etas = np.random.rand(1,N) # $
+    eta_bars = (1-etas)[0] # 
 
   sigmas = np.zeros([N,N]) # sigma_k,n is kxn $
   sigmas = np.transpose(np.random.dirichlet(np.ones(N),N))
-
-  etas = np.random.rand(1,N) # $
-  eta_bars = (1-etas)[0] # TODO: fix for 1 actor/no undermining
 
   lambdas = np.zeros([N,N])  # lambda_k,n is kxn $
   lambdas = np.transpose(np.random.dirichlet(np.ones(N),N))
@@ -199,7 +201,7 @@ def run_system(N1,N2,N3,K,M,T,C,sample_exp):
     F,H,W,K_p,sigmas, lambdas, converged, strategy_history, grad = nash_equilibrium(max_steps,J,N,K,M,T,
     phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,
     dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n)
-
+    print('completed strategy optimization')
 
     # ------------------------------------------------------------------------
     # Compute Jacobian and see if system is weakly connected
@@ -214,12 +216,14 @@ def run_system(N1,N2,N3,K,M,T,C,sample_exp):
     adjacency_matrix[J != 0] = 1
     graph = nx.from_numpy_array(adjacency_matrix,create_using=nx.DiGraph)
     is_connected = nx.is_weakly_connected(graph)
+    print('checking connectivity')
     if is_connected == False:
       print('not weakly connected')
   # --------------------------------------------------------------------------
   # Compute the eigenvalues of the Jacobian and check stability
   # --------------------------------------------------------------------------
   eigvals = np.linalg.eigvals(J)
+  print('calculate eigenvalues')
   if np.all(eigvals.real < 10e-5):  # stable if real part of eigenvalues is negative
     stability = True
   else:

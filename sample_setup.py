@@ -24,7 +24,6 @@ def sample_composition(size,p_N = 0.6,p_K = 0.2, partial_composition=np.array([N
       rand_actors = np.random.rand(size-(N+1))
     # N sampled
     else:
-      print('N sampled')
       # Need at least 2 resource users
       N = 2
       if partial_composition[5] == None:

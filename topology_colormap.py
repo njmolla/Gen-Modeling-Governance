@@ -24,18 +24,16 @@ def run_cm_samples(size,C,num_samples,stabilities,total_connectances,convergence
       print(e)
       continue
     stability = result[0] # stability is the first return value
-    print(stability)
     converged = result[2]
     connectance = result[5]
     stabilities.append(stability)
-    print(stabilities)
     total_connectances.append(connectance)
     convergences.append(converged)
 
 #--------------------------------------------------------------------------------------
 # Initial colormap experiment (sizes and connectances)
 # -------------------------------------------------------------------------------------
-
+num_processors = comm.size
 size_ranges = np.arange(5,20,1)
 connectance_ranges = np.linspace(0.1,0.8,32)
 num_samples = 200
