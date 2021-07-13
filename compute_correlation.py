@@ -11,8 +11,8 @@ def compute_correlation(param, stability):
   denom = len(stability)*np.std(param)*np.std(stability)
   return np.where(denom < 1e-10, 0, num/denom)
 #
-folder = 'Correlation_15//run2_corrected'
-files = glob.glob(folder + '\corr_data' + '_*')
+folder = 'Correlation_15//run3_revisedEqn//'
+files = glob.glob(folder + 'corr_data' + '_*')
 frames = []
 for file in files:
   with open(file, 'rb') as f:
@@ -91,38 +91,32 @@ mean_CI = np.stack(mean_CI)
 mean_corr_sorted = np.concatenate([np.sort(mean_corr.values)[:5],np.sort(mean_corr.values)[-5:]])
 mean_label_indices = np.concatenate([np.argsort(mean_corr.values)[:5],np.argsort(mean_corr.values)[-5:]])
 mean_CI = mean_CI[mean_label_indices]
-mean_yerr = np.c_[mean_corr_sorted-CI[:,0],CI[:,1]-mean_corr_sorted ].T
+mean_yerr = np.c_[mean_corr_sorted-mean_CI[:,0],mean_CI[:,1]-mean_corr_sorted ].T
 plt.figure()
 plt.bar(np.arange(len(mean_corr_sorted)), mean_corr_sorted, yerr = mean_yerr, align='center', alpha=0.5)
-labels = [r'$\phi$', r'$\psi$', r'$\alpha$', r'$\beta$', r'$\hat{\beta}$',r'$\tilde{\beta}$',r'$\sigma$',r'$\eta$',r'$\lambda$',r'$\bar{\eta}$',r'$\mu$',r'$\dfrac{\partial s}{\partial r}$',
+labels = [r'$\phi$', r'$\psi$', r'$\alpha$', r'$\beta$', r'$\hat{\beta}$',r'$\tilde{\beta}$',r'$\overline{\beta}$',r'$\sigma$',r'$\eta$',r'$\lambda$',r'$\bar{\eta}$',r'$\mu$',r'$\dfrac{\partial s}{\partial r}$',
           r'$\dfrac{\partial e}{\partial r}$',r'$\dfrac{\partial e}{\partial g}$',r'$\dfrac{\partial g}{\partial F}$',r'$\dfrac{\partial g}{\partial y}$',
           r'$\dfrac{\partial p}{\partial y}$',r'$\dfrac{\partial b}{\partial e}$',r'$\dfrac{\partial a}{\partial r}$',r'$\dfrac{\partial q}{\partial a}$',
           r'$\dfrac{\partial a}{\partial p}$',r'$\dfrac{\partial p}{\partial H}$',r'$\dfrac{\partial c}{\partial W_p}$',r'$\dfrac{\partial c}{\partial w_n}$',
-          r'$\dfrac{\partial l}{\partial x}$',r'$\dfrac{\partial i}{\partial K_p}$',r'$\dfrac{\partial i}{\partial K_n}$',r'$\dfrac{\partial i}{\partial y_p}$',
+          r'$\dfrac{\partial l}{\partial x}$',r'$\dfrac{\partial u}{\partial x}$',r'$\dfrac{\partial i}{\partial K_p}$',r'$\dfrac{\partial i}{\partial K_n}$',r'$\dfrac{\partial i}{\partial y_p}$',
           r'$\dfrac{\partial i}{\partial y_n}$','F','H','W','K']
 
-plt.xticks(np.arange(len(label_indices)), np.array(labels)[label_indices])
+plt.xticks(np.arange(len(mean_label_indices)), np.array(labels)[mean_label_indices])
 plt.title('Correlation of parameters with stability')
 plt.savefig('Correlation_15.svg')
 plt.show()
 
-mean_corr = correlation_df['Mean Correlation'].dropna()
-mean_CI = correlation_df['Mean CI'].dropna().values
-mean_CI = np.stack(mean_CI)
-mean_corr_sorted = np.concatenate([np.sort(mean_corr.values)[:5],np.sort(mean_corr.values)[-5:]])
-mean_label_indices = np.concatenate([np.argsort(mean_corr.values)[:5],np.argsort(mean_corr.values)[-5:]])
-mean_CI = mean_CI[mean_label_indices]
-mean_yerr = np.c_[mean_corr_sorted-CI[:,0],CI[:,1]-mean_corr_sorted ].T
+std_corr = correlation_df['St Dev Correlation'].dropna()
+std_CI = correlation_df['St Dev CI'].dropna().values
+std_CI = np.stack(std_CI)
+std_corr_sorted = np.concatenate([np.sort(std_corr.values)[:5],np.sort(std_corr.values)[-5:]])
+std_label_indices = np.concatenate([np.argsort(std_corr.values)[:5],np.argsort(std_corr.values)[-5:]])
+std_CI = std_CI[std_label_indices]
+std_yerr = np.c_[std_corr_sorted-std_CI[:,0],std_CI[:,1]-std_corr_sorted ].T
 plt.figure()
-plt.bar(np.arange(len(mean_corr_sorted)), mean_corr_sorted, yerr = mean_yerr, align='center', alpha=0.5)
-labels = [r'$\phi$', r'$\psi$', r'$\alpha$', r'$\beta$', r'$\hat{\beta}$',r'$\tilde{\beta}$',r'$\sigma$',r'$\eta$',r'$\lambda$',r'$\bar{\eta}$',r'$\mu$',r'$\dfrac{\partial s}{\partial r}$',
-          r'$\dfrac{\partial e}{\partial r}$',r'$\dfrac{\partial e}{\partial g}$',r'$\dfrac{\partial g}{\partial F}$',r'$\dfrac{\partial g}{\partial y}$',
-          r'$\dfrac{\partial p}{\partial y}$',r'$\dfrac{\partial b}{\partial e}$',r'$\dfrac{\partial a}{\partial r}$',r'$\dfrac{\partial q}{\partial a}$',
-          r'$\dfrac{\partial a}{\partial p}$',r'$\dfrac{\partial p}{\partial H}$',r'$\dfrac{\partial c}{\partial W_p}$',r'$\dfrac{\partial c}{\partial w_n}$',
-          r'$\dfrac{\partial l}{\partial x}$',r'$\dfrac{\partial i}{\partial K_p}$',r'$\dfrac{\partial i}{\partial K_n}$',r'$\dfrac{\partial i}{\partial y_p}$',
-          r'$\dfrac{\partial i}{\partial y_n}$','F','H','W','K']
+plt.bar(np.arange(len(std_corr_sorted)), std_corr_sorted, yerr = std_yerr, align='center', alpha=0.5)
 
-plt.xticks(np.arange(len(label_indices)), np.array(labels)[label_indices])
-plt.title('Correlation of parameters with stability')
-plt.savefig('Correlation_15.svg')
+plt.xticks(np.arange(len(std_label_indices)), np.array(labels)[std_label_indices])
+plt.title('Correlation of standard deviation in parameters with stability')
+plt.savefig('Correlation_15_std.svg')
 plt.show()

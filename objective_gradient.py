@@ -4,9 +4,10 @@ from compute_J import assign_when
 from numba import jit
 
 def SS_derivatives(strategy, n, l, J, N,K,M,T,
-    phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
-    F,H,W,K_p,drdot_dF, dxdot_dF, dydot_dF, drdot_dH, dxdot_dH, dydot_dH, drdot_dW_p, dxdot_dW_p, dydot_dW_p, drdot_dW_n, dxdot_dW_n, dydot_dW_n,drdot_dK_p,
-    dxdot_dK_p, dydot_dK_p, drdot_dK_n, dxdot_dK_n, dydot_dK_n):
+          phi,psis,alphas,betas,beta_hats,beta_tildes,beta_bars,sigmas,etas,lambdas,eta_bars,mus,
+          ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,du_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
+          F,H,W,K_p,drdot_dF, dxdot_dF, dydot_dF, drdot_dH, dxdot_dH, dydot_dH, drdot_dW_p, dxdot_dW_p, dydot_dW_p, drdot_dW_n, dxdot_dW_n, dydot_dW_n,drdot_dK_p,
+          dxdot_dK_p, dydot_dK_p, drdot_dK_n, dxdot_dK_n, dydot_dK_n):
 
   # Unpack strategy parameters.
   F[l] = strategy[0:M*N].reshape((M,N))
@@ -16,8 +17,9 @@ def SS_derivatives(strategy, n, l, J, N,K,M,T,
 
   # Compute Jacobian
   J = determine_stability(N,K,M,T,
-	  phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
-	  F,H,W,K_p)
+      phi,psis,alphas,betas,beta_hats,beta_tildes,beta_bars,sigmas,etas,lambdas,eta_bars,mus,
+      ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,du_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
+      F,H,W,K_p)
   #print('Jacobian:',str(J))
   # Compute inverse Jacobian
   J_inv = np.linalg.inv(J)
@@ -35,7 +37,8 @@ def SS_derivatives(strategy, n, l, J, N,K,M,T,
 
 @jit(nopython=True)
 def objective_grad(strategy, n, l, J, N,K,M,T,
-    phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
+    phi,psis,alphas,betas,beta_hats,beta_tildes,beta_bars,sigmas,etas,lambdas,eta_bars,mus,
+    ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,du_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
     F,H,W,K_p,dR_dF, dX_dF, dY_dF, dR_dH, dX_dH, dY_dH, dR_dW_p, dX_dW_p, dY_dW_p, dR_dW_n, dX_dW_n, dY_dW_n, dR_dK_p, dX_dK_p, dY_dK_p, dR_dK_n, dX_dK_n, dY_dK_n):
   '''
   inputs:

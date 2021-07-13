@@ -4,7 +4,7 @@ from objective_gradient import objective_grad
 from objective_gradient import SS_derivatives
 # import matplotlib.pyplot as plt
 
-def correct_scale_params(sigmas, lambdas, alloc_params, i, betas, beta_hats, beta_tildes, etas, eta_bars, has_zero_betas):
+def correct_scale_params(sigmas, lambdas, alloc_params, i, N, K, betas, beta_hats, beta_tildes, beta_bars, du_dx, etas, eta_bars):
   '''
   Corrects scale parameters (either sigmas or lambdas) to be consisent with optimization
   results. Takes in scale parameters (2d) and strategy parameters for a particular actor i (1d),
@@ -23,13 +23,28 @@ def correct_scale_params(sigmas, lambdas, alloc_params, i, betas, beta_hats, bet
           ),
           np.shape(sigmas[:, ~all_zeros_sigmas & new_zeros_sigmas])
       )
-  if np.any(np.bitwise_and(beta_hats[0, all_zeros_sigmas] == 0, betas[0, all_zeros_sigmas]==0)):
-    has_zero_betas = True
-  else:
-    beta_tildes[0,all_zeros_sigmas] = 0
-    beta_hats[0,all_zeros_sigmas] /= (beta_hats[0,all_zeros_sigmas] + betas[0,all_zeros_sigmas])
-    betas[0,all_zeros_sigmas] /= (betas[0,all_zeros_sigmas] + beta_hats[0,all_zeros_sigmas])                                                                            
-  
+   
+  # Create views of the part for resource users
+  user_beta_tildes = beta_tildes[0, :N-K]
+  user_beta_hats = beta_hats[0, :N-K]
+  user_betas = betas[0, :N-K]
+  user_zeros = all_zeros_sigmas[:N-K]
+
+  user_beta_tildes[user_zeros] = 0
+  user_beta_sums = user_beta_hats[user_zeros] + user_betas[user_zeros]
+  user_beta_hats[user_zeros] /= user_beta_sums
+  user_betas[user_zeros] /= user_beta_sums
+
+  # Create views of the part for non-resource users
+  nonuser_beta_tildes = beta_tildes[0, N-K:]
+  nonuser_beta_bars = beta_bars[0, N-K:]
+  nonuser_zeros = all_zeros_sigmas[N-K:]
+  nonuser_du_dx = du_dx[N-K:]
+
+  nonuser_beta_tildes[nonuser_zeros] = 0
+  nonuser_du_dx[nonuser_zeros] *= nonuser_beta_bars[nonuser_zeros]
+  nonuser_beta_bars[nonuser_zeros] = 1
+     
   new_zeros_lambdas = (alloc_params >= 0)
   lambdas[i, new_zeros_sigmas] = 0
   all_zeros_lambdas = (np.sum(lambdas, axis=0) == 0)
@@ -45,7 +60,7 @@ def correct_scale_params(sigmas, lambdas, alloc_params, i, betas, beta_hats, bet
 
   etas[0, all_zeros_lambdas] = 0
   eta_bars[all_zeros_lambdas] = 1
-  return has_zero_betas
+
   
 
 # If strategy does not have all efforts >= 0, project onto space of legal strategies
@@ -54,9 +69,11 @@ def boundary_projection(mu, strategy, plane):
 
 
 def grad_descent_constrained(initial_point, alpha, v, n, l, J, N,K,M,T,
-    phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
+    phi,psis,alphas,betas,beta_hats,beta_tildes,beta_bars,sigmas,etas,lambdas,eta_bars,mus,
+    ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,du_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
     F,H,W,K_p,drdot_dF,dxdot_dF, dydot_dF, drdot_dH, dxdot_dH, dydot_dH, drdot_dW_p, dxdot_dW_p, dydot_dW_p, drdot_dW_n, dxdot_dW_n, dydot_dW_n,drdot_dK_p,
     dxdot_dK_p, dydot_dK_p, drdot_dK_n, dxdot_dK_n, dydot_dK_n):
+    
   '''
   inputs:
     initial_point is the initial strategy
@@ -74,13 +91,17 @@ def grad_descent_constrained(initial_point, alpha, v, n, l, J, N,K,M,T,
   x = initial_point  # strategy
   # calculate how steady state changes with respect to strategy parameters
   dR_dF, dX_dF, dY_dF, dR_dH, dX_dH, dY_dH, dR_dW_p, dX_dW_p, dY_dW_p, dR_dW_n, dX_dW_n, dY_dW_n, dR_dK_p, dX_dK_p, dY_dK_p, dR_dK_n, dX_dK_n, dY_dK_n\
-  = SS_derivatives(x, n, l, J, N,K,M,T,phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,
-                   db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,F,H,W,K_p,drdot_dF, dxdot_dF, dydot_dF,
-                   drdot_dH, dxdot_dH, dydot_dH, drdot_dW_p, dxdot_dW_p, dydot_dW_p, drdot_dW_n, dxdot_dW_n, dydot_dW_n,drdot_dK_p, dxdot_dK_p, dydot_dK_p,
-                   drdot_dK_n, dxdot_dK_n, dydot_dK_n)
+  = SS_derivatives(x, n, l, J, N,K,M,T,          
+    phi,psis,alphas,betas,beta_hats,beta_tildes,beta_bars,sigmas,etas,lambdas,eta_bars,mus,
+    ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,du_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
+    F,H,W,K_p, drdot_dF, dxdot_dF, dydot_dF, drdot_dH, dxdot_dH, dydot_dH, drdot_dW_p, dxdot_dW_p, dydot_dW_p, drdot_dW_n, 
+    dxdot_dW_n, dydot_dW_n,drdot_dK_p, dxdot_dK_p, dydot_dK_p, drdot_dK_n, dxdot_dK_n, dydot_dK_n)
+          
+          
   # calculate how objective changes wrt strategy parameters (the gradient)
   grad = objective_grad(x, n, l, J, N,K,M,T,
-    phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
+    phi,psis,alphas,betas,beta_hats,beta_tildes,beta_bars,sigmas,etas,lambdas,eta_bars,mus,
+    ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,du_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
     F,H,W,K_p,dR_dF, dX_dF, dY_dF, dR_dH, dX_dH, dY_dH, dR_dW_p, dX_dW_p, dY_dW_p, dR_dW_n, dX_dW_n, dY_dW_n, dR_dK_p, dX_dK_p, dY_dK_p, dR_dK_n, dX_dK_n, dY_dK_n)
 
   d = len(x)
@@ -110,8 +131,8 @@ def grad_descent_constrained(initial_point, alpha, v, n, l, J, N,K,M,T,
   return x, v # normally return only x
 
 def compute_RHS_gradient(N,K,M,T,
-    phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,
-    dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n):
+    phi,psis,alphas,betas,beta_hats,beta_tildes,beta_bars,sigmas,etas,lambdas,eta_bars,mus,
+    ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,du_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n):
   # Compute how the rhs of system changes with respect to each strategy parameter
   drdot_dF = -phi*np.multiply(psis.reshape(1,1,N),np.multiply(de_dg,dg_dF))
   dxdot_dF = np.zeros([N,N,M,N])
@@ -157,8 +178,7 @@ def compute_RHS_gradient(N,K,M,T,
           dxdot_dK_p, dydot_dK_p, drdot_dK_n, dxdot_dK_n, dydot_dK_n)
 
 def nash_equilibrium(max_iters,J,N,K,M,T,
-    phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,
-    dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n):
+    phi,psis,alphas,betas,beta_hats,beta_tildes,beta_bars,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,du_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n):
   '''
   inputs:
     max_iters
@@ -198,8 +218,8 @@ def nash_equilibrium(max_iters,J,N,K,M,T,
   #
   (drdot_dF, dxdot_dF, dydot_dF, drdot_dH, dxdot_dH, dydot_dH, drdot_dW_p, dxdot_dW_p, dydot_dW_p, drdot_dW_n, dxdot_dW_n, dydot_dW_n,drdot_dK_p,
   dxdot_dK_p, dydot_dK_p, drdot_dK_n, dxdot_dK_n, dydot_dK_n) = compute_RHS_gradient(N,K,M,T,
-                                                                                     phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,
-                                                                                     ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n)
+                                                                                     phi,psis,alphas,betas,beta_hats,beta_tildes,beta_bars,sigmas,etas,lambdas,eta_bars,mus,
+                                                                                     ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,du_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n)
   while (max_diff > tolerance or sum_below_1) and iterations < max_iters:
     # Loop through each actor i
     for i in range(N):
@@ -209,15 +229,11 @@ def nash_equilibrium(max_iters,J,N,K,M,T,
         objective = objectives[i-(N-K)]
 
       new_strategy, v = grad_descent_constrained(strategy[i], alpha, v, objective, i, J, N,K,M,T,
-          phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
+          phi,psis,alphas,betas,beta_hats,beta_tildes,beta_bars,sigmas,etas,lambdas,eta_bars,mus,
+          ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,du_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
           F,H,W,K_p,drdot_dF, dxdot_dF, dydot_dF, drdot_dH, dxdot_dH, dydot_dH, drdot_dW_p, dxdot_dW_p, dydot_dW_p, drdot_dW_n, dxdot_dW_n, dydot_dW_n,drdot_dK_p,
           dxdot_dK_p, dydot_dK_p, drdot_dK_n, dxdot_dK_n, dydot_dK_n)
 
-#      if np.sign(F)[0] != np.sign(K_p):
-#        match[0] += 1
-#
-#      if np.any(np.diagonal(J)[1:-M] > 0):
-#        Jac_condition[0] += 1
 
       # Check if there are new zeros or changes in the sign of the strategy parameters to see if we need to update scale parameters
       # (e.g. for portion of gain through collaboration) to make sure they are consistent with our new
@@ -225,12 +241,11 @@ def nash_equilibrium(max_iters,J,N,K,M,T,
       
       # if there are more zeros in the new strategy than the previous, or changes in the sign, and the scale parameters aren't already all zeros
       if np.count_nonzero(new_strategy[2*M*N:2*M*N+N]) < np.count_nonzero(strategy[i][2*M*N:2*M*N+N]) or np.any(strategy[i][2*M*N:2*M*N+N] * new_strategy[2*M*N:2*M*N+N] < 0) and (np.any(sigmas > 0) or np.any(lambdas > 0)) :
-        has_zero_betas = correct_scale_params(sigmas, lambdas, new_strategy[2*M*N:2*M*N+N], i, betas, beta_hats, beta_tildes, etas, eta_bars, has_zero_betas)
-
+        correct_scale_params(sigmas, lambdas, new_strategy[2*M*N:2*M*N+N], i, N, K, betas, beta_hats, beta_tildes, beta_bars, du_dx, etas, eta_bars)
         (drdot_dF, dxdot_dF, dydot_dF, drdot_dH, dxdot_dH, dydot_dH, drdot_dW_p, dxdot_dW_p, dydot_dW_p, drdot_dW_n, dxdot_dW_n, dydot_dW_n,drdot_dK_p,
          dxdot_dK_p, dydot_dK_p, drdot_dK_n, dxdot_dK_n, dydot_dK_n) = compute_RHS_gradient(N,K,M,T,
-                                                                                            phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,
-                                                                                            ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n)
+                                                                                     phi,psis,alphas,betas,beta_hats,beta_tildes,beta_bars,sigmas,etas,lambdas,eta_bars,mus,
+                                                                                     ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,du_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n)
         #print('updating scale params')
       # update strategy and gradient for this actor
       strategy[i] = new_strategy

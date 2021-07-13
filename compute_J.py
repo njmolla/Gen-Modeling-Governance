@@ -4,8 +4,9 @@ from numba import jit
 
 @jit(nopython=True)
 def determine_stability(N,K,M,T,
-	  phi,psis,alphas,betas,beta_hats,beta_tildes,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
-	  F,H,W,K_p):
+      phi,psis,alphas,betas,beta_hats,beta_tildes,beta_bars,sigmas,etas,lambdas,eta_bars,mus,
+      ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,du_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
+      F,H,W,K_p):
 
   # --------------------------------------------------------------------------
   # Compute Jacobian (vectorized)
@@ -45,22 +46,11 @@ def determine_stability(N,K,M,T,
 
  # dx•/dx for n = i (overwrite the diagonal)
   for i in range(N):
-    alphas[0,i]
-    betas[0,i]
-    db_de[0,i]
-    de_dg[0,:,i]
-    dg_dF[i,:,i]
-    F[i,:,i]
-    beta_hats[0,i]
-    dq_da[0,i]
-    da_dp[0,:,i]
-    dp_dH[i,:,i]
-    H[i,:,i]
-    eta_bars[i]
-    dl_dx[i]
+
     J[i+1,i+1] = alphas[0,i] * (
                      betas[0,i]     * db_de[0,i] * np.sum(de_dg[0,:,i] * dg_dF[i,:,i] * F[i,:,i])
                    + beta_hats[0,i] * dq_da[0,i] * np.sum(da_dp[0,:,i] * dp_dH[i,:,i] * H[i,:,i])
+                   + beta_bars[0,i] * du_dx[i]
                    - eta_bars[i] * dl_dx[i]
                  )
 
