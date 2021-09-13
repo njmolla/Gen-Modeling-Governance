@@ -14,10 +14,12 @@ def run_cm_samples(size,C,num_samples,stabilities,total_connectances,convergence
   '''
   for i in range(num_samples):
     if sample == True:
+      print('sampling N')
       N,N1,N2,N3,K,M,T = sample_composition(size, partial_composition = composition)
     else:
       N,N1,N2,N3,K,M = tuple(composition)
       T = sum((N,M,K)) + 1
+    print(N,N1,N2,N3,K,M)
     try:
       result = run_system(N1,N2,N3,K,M,T,C,sample_exp=False)
     except Exception as e:
