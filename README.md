@@ -1,23 +1,25 @@
-# Gen-Modeling-Governance
+# A Dynamical Systems Approach to the Stability of Complex Governance
+
+A modeling approach that allows for representing a variety of governance systems by sampling different topological parameters and model parameters, and computing the stability of the different systems. 
 
 
 sample  
-  samples stuff  
-  strategy optimization  
-    call determine_stability to get Jacobian  
-    call nash_equilibrium  
-      loop until you get to equilibrium  
-        loop over each actor  
-          call grad_descent_constrained  
-            loop until max_steps or convergence  
-              call objective_grad  
-                call determine_stability to get Jacobian  
-                do giant calculation for everything else  
-              do slick stuff  
-          call correct_scale_params  
-  check if it's stable  
-    call determine_stability to check stability and get Jacobian  
-    if it is not weakly connected (checked using Jacobian), start sample process from the beginning  
+&nbsp;&nbsp;samples stuff  
+&nbsp;&nbsp;strategy optimization  
+&nbsp;&nbsp;&nbsp;&nbsp;call determine_stability to get Jacobian  
+&nbsp;&nbsp;&nbsp;&nbsp;call nash_equilibrium  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;loop until you get to equilibrium  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;loop over each actor  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;call grad_descent_constrained  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;loop until max_steps or convergence  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;call objective_grad  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;call determine_stability to get Jacobian  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;do giant calculation for everything else  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;do slick stuff  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;call correct_scale_params  
+&nbsp;&nbsp;check if it's stable  
+&nbsp;&nbsp;&nbsp;&nbsp;call determine_stability to check stability and get Jacobian  
+&nbsp;&nbsp;&nbsp;&nbsp;if it is not weakly connected (checked using Jacobian), start sample process from the beginning  
 
 
 ----------------------------------------------------------------------------------------------------
