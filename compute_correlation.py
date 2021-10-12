@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 import pickle
 import glob
 
+'''
+Code for processing data from correlation experiments (correlation_experiment.py)
+'''
 
 def compute_correlation(param, stability):
   PSW = sum(stability==True)/len(stability) # proportion stable webs
@@ -20,8 +23,8 @@ for file in files:
     frames.append(df)
 
 data = pd.concat(frames, ignore_index = True)
-#add columns to dataframe for different versions of strategy parameters
 
+#add columns to dataframe for different versions of strategy parameters
 F = np.stack(data['F'].values)
 F_p = np.zeros(np.shape(F))
 F_p[F>0] = F[F>0]
@@ -65,7 +68,10 @@ var_values = pd.DataFrame(columns = data.columns)
 correlation_df = pd.DataFrame(index = list(data.columns[:35]) + list(data.columns[36:]),
                               columns = ['Mean Correlation', 'St Dev Correlation', 'Mean CI', 'St Dev CI'])
 
-for column in list(data.columns[:35]) + list(data.columns[36:]):
+# Go through each parameter (the columns of the dataframe) and aggregate the parameter values in each experiment
+# (by averaging or finding the standard deviation across actors) and then compute the correlation of the aggregated
+# parameter values with stability
+for column in list(data.columns[:35]) + list(data.columns[36:]): #exclude the stability column
   param = np.stack(data[column].values)
   axes = np.arange(len(np.shape(param)))[1:] # shape is # of points x dimensions of the parameter itself
   param_averaged = np.mean(param, axis = tuple(axes))
@@ -90,7 +96,7 @@ for column in list(data.columns[:35]) + list(data.columns[36:]):
     var_values[column] = param_var
   stability = data['stability'].values
   
-  if column == ('de_dg' or 'dg_dy' or 'dp_dy' or 'da_dp'): # these are MxN
+  if column == ('de_dg' or 'dg_dy' or 'dp_dy' or 'da_dp'): # unlike other parameters, these are MxN so need to recalculate
     param_var = np.std(np.mean(np.squeeze(param),axis=1),axis=1)
   # compute correlation of parameter with stability
   correlation_df['Mean Correlation'][column] = compute_correlation(param_averaged, stability)
@@ -132,7 +138,7 @@ with open('corr_data_15_2', 'wb') as f:
 mean_corr = correlation_df['Mean Correlation'].dropna().values
 mean_CI = correlation_df['Mean CI'].dropna().values
 mean_CI = np.stack(mean_CI)
-mean_yerr = np.c_[mean_corr-mean_CI[:,0],mean_CI[:,1]-mean_corr ].T
+mean_yerr = np.c_[mean_corr-mean_CI[:,0],mean_CI[:,1]-mean_corr ].T # get confidence intervals in the right form for plotting as error bars
 # get indices of parameters that are significant (conf int don't include 0 and corr is greater than 0.01)
 significant_ind = (mean_CI[:,0]*mean_CI[:,1] > 0) & (abs(np.where(mean_corr<0,np.max(mean_CI,axis=1),np.min(mean_CI,axis=1))) > 5e-3)
 significant_ind_sorted = np.argsort(mean_corr[significant_ind])
@@ -158,7 +164,7 @@ plt.show()
 std_corr = correlation_df['St Dev Correlation'].dropna()
 std_CI = correlation_df['St Dev CI'].dropna().values
 std_CI = np.stack(std_CI)
-std_yerr = np.c_[std_corr-std_CI[:,0],std_CI[:,1]-std_corr].T
+std_yerr = np.c_[std_corr-std_CI[:,0],std_CI[:,1]-std_corr].T # get confidence intervals in the right form for plotting as error bars
 significant_ind = (std_CI[:,0]*std_CI[:,1] > 0) & (abs(np.where(std_corr<0,np.max(std_CI,axis=1),np.min(std_CI,axis=1))) > 5e-3)
 significant_ind_sorted = np.argsort(std_corr[significant_ind])
 #std_label_indices = np.concatenate([np.argsort(std_CI[:,0])[:5],np.argsort(std_CI[:,0])[-5:]])

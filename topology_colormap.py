@@ -6,15 +6,19 @@ import sys
 import pickle
 import pandas as pd
 
+'''
+Script for experiments to construct colormaps
+'''
+
 comm = MPI.COMM_WORLD
 
 def run_cm_samples(size,C,num_samples,stabilities,total_connectances,convergences, composition = np.array([None,None,None,None,None,None]),sample = True):
   '''
-  Run num_samples samples and return total connectance and stability data
+  For given size and connectance (C), generate and run num_samples samples (either by sampling or using the given composition)
+  and return total connectance, convergence, and stability data
   '''
   for i in range(num_samples):
     if sample == True:
-      print('sampling N')
       N,N1,N2,N3,K,M,T = sample_composition(size, partial_composition = composition)
     else:
       N,N1,N2,N3,K,M = tuple(composition)
@@ -35,10 +39,13 @@ def run_cm_samples(size,C,num_samples,stabilities,total_connectances,convergence
 #--------------------------------------------------------------------------------------
 # Initial colormap experiment (sizes and connectances)
 # -------------------------------------------------------------------------------------
+## Code for running experiment to see how varying connectance and total system size affect stability
+
 # num_processors must be chosen so that it is divisible len(size_ranges)
 # and such that len(connectance_ranges) is divisible by len(num_processors)/len(size_ranges)
 # If len(size_ranges) == 16 and len(connectance_ranges) == 30, then 96 works since 30 is
 # divisible by 96 / 16 = 6.
+
 # num_processors = comm.size
 # size_ranges = np.arange(5, 20+1, 1)  # length == 16. Each size is a row
 # connectance_ranges = np.linspace(0.1, 0.8, 30) # Size of this must be divisible by len(num_processors)/len(size_ranges)
@@ -82,6 +89,9 @@ def run_cm_samples(size,C,num_samples,stabilities,total_connectances,convergence
 #--------------------------------------------------------------------------------------
 # Exploring proportions
 # -------------------------------------------------------------------------------------
+## A preliminary experiment to look at how varying the number of different types of 
+## entities (RUs, decision centers, etc.) and connectance affect stability
+
 # Total_size = 10
 # sizes = np.arange(2,9,1)
 # connectances = np.linspace(0.1,0.8,10)
@@ -111,6 +121,8 @@ def run_cm_samples(size,C,num_samples,stabilities,total_connectances,convergence
 #--------------------------------------------------------------------------------------
 # Simplex experiment (overall composition)
 # -------------------------------------------------------------------------------------
+## Experiment to see how varying the proportions of different types of entities affects
+## stability (holding total size and total connectance fixed)
 
 # np.random.seed(comm.rank+866)
 
@@ -157,6 +169,9 @@ def run_cm_samples(size,C,num_samples,stabilities,total_connectances,convergence
 ##--------------------------------------------------------------------------------------
 ## Simplex experiment (resource user composition)
 ## -------------------------------------------------------------------------------------
+## Experiment to see how varying the proportions of different types of resource users affects
+## stability (holding total size, total number of resource users and total connectance fixed)
+
 np.random.seed(comm.rank+876)
 
 total_size = 10

@@ -4,7 +4,9 @@ from mpi4py import MPI
 import pandas as pd
 import pickle
 
-
+'''
+Code for experiment to determine how model parameters correlate to stability
+'''
 ## Run in parallel ##
 comm = MPI.COMM_WORLD
 
@@ -18,7 +20,7 @@ data = pd.DataFrame(columns = ['phi', 'psis', 'alphas', 'betas', 'beta_hats','be
                                'di_dK_p','di_dK_n','di_dy_p','di_dy_n','F','H','W','K_p','stability'])
 stability_list = []
 
-#specify composition
+# specify composition (composition is fixed for all experiments)
 
 N1 = 3
 N2 = 3

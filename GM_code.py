@@ -5,7 +5,19 @@ from strategy_optimization import nash_equilibrium
 
 
 def sample_scale_params(N1,N2,N3,K,M,T,C):
-
+  '''
+  Takes in system meta-parameters and samples the scale parameters
+  
+  Inputs:
+    N1, N2, and N3: number of (exclusively) extractors, combined extractors and 
+      accessors, and (exclusively) accessors, respectively
+    K: number of non-resource user actors
+    M: number of decision centers
+    T: total number of state variables (this is N + K + M + 1)
+    C: density of decision center interventions
+  Outputs:
+    All of the scale parameters 
+  '''
   N = N1 + N2 + N3 + K
 
   # ------------------------------------------------------------------------
@@ -60,6 +72,20 @@ def sample_scale_params(N1,N2,N3,K,M,T,C):
   return phi,psis,alphas,betas,beta_hats,beta_tildes,beta_bars,sigmas,etas,lambdas,eta_bars,mus
 
 def sample_exp_params(N1,N2,N3,K,M,T,C):
+  '''
+  Takes in system meta-parameters and samples the exponent parameters
+  (used for the correlation experiments)
+  
+  Inputs:
+    N1, N2, and N3: number of (exclusively) extractors, combined extractors and 
+      accessors, and (exclusively) accessors, respectively
+    K: number of non-resource user actors
+    M: number of decision centers
+    T: total number of state variables (this is N + K + M + 1)
+    C: density of decision center interventions
+  Outputs:
+    All of the exponent parameters 
+  '''
   # ------------------------------------------------------------------------
   # Initialize exponent parameters
   # ------------------------------------------------------------------------
@@ -101,6 +127,20 @@ def sample_exp_params(N1,N2,N3,K,M,T,C):
   return de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,du_dx,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n
 
 def fix_exp_params(N1,N2,N3,K,M,T,C):
+  '''
+  Takes in system meta-parameters and sets the exponent parameters to fixed values
+  (used for the topology experiments)
+  
+  Inputs:
+    N1, N2, and N3: number of (exclusively) extractors, combined extractors and 
+      accessors, and (exclusively) accessors, respectively
+    K: number of non-resource user actors
+    M: number of decision centers
+    T: total number of state variables (this is N + K + M + 1)
+    C: density of decision center interventions
+  Outputs:
+    All of the exponent parameters 
+  '''
   # ------------------------------------------------------------------------
   # Initialize exponent parameters
   # ------------------------------------------------------------------------
@@ -138,7 +178,32 @@ def fix_exp_params(N1,N2,N3,K,M,T,C):
 
   return ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,du_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n
 
+##########################################################################################
 def run_system(N1,N2,N3,K,M,T,C,sample_exp):
+  '''
+  Takes in system meta-parameters and produces a system parameterization and computes
+  stability of that system
+  
+  Inputs:
+    N1, N2, and N3: number of (exclusively) extractors, combined extractors and 
+      accessors, and (exclusively) accessors, respectively
+    K: number of non-resource user actors
+    M: number of decision centers
+    T: total number of state variables (this is N + K + M + 1)
+    C: density of decision center interventions
+  Outputs:
+    stability: a boolean, True indicates stable, False indicates unstable
+    J: the Jacobian
+    converged: a boolean, True indicates the optimization reached convergence, False
+      indicates the optimization ran into the maximum number of iterations
+    strategy_history: a list of all the strategies of all of the actors throughout the 
+      optimization, used to debug the optimization
+    grad: the gradient of the objective function for the chosen strategy. used to debug
+      the optimization
+    total_connectance: the proportion of all possible interactions that exist in the 
+      final system
+    The remaining outputs are all of the sampled or computed scale, exponent, and strategy parameters.
+  '''
   N = N1 + N2 + N3 + K
   is_connected = False
   while is_connected == False:
@@ -240,12 +305,14 @@ def run_system(N1,N2,N3,K,M,T,C,sample_exp):
   # Compute the eigenvalues of the Jacobian and check stability
   # --------------------------------------------------------------------------
   eigvals = np.linalg.eigvals(J)
-  if np.all(eigvals.real < 10e-5):  # stable if real part of eigenvalues is negative
+  if np.all(eigvals.real < 0):  # stable if real part of eigenvalues is negative
     stability = True
   else:
     stability = False  # unstable if real part is positive, inconclusive if 0
 
-  # compute actual total connectance
+  # Compute actual total connectance
+  
+  # Zero out strategy parameters that are close to 0 for purposes of computing connectance
   F[np.abs(F)<1e-5] = 0
   H[np.abs(H)<1e-5] = 0
   W[np.abs(W)<1e-5] = 0
@@ -263,7 +330,6 @@ def run_system(N1,N2,N3,K,M,T,C,sample_exp):
       phi,psis,alphas,betas,beta_hats,beta_tildes,beta_bars,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,du_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
       F,H,W,K_p)
 
-##########################################################################################
 
 def run_once(N1,N2,N3,K,M,T,C,sample_exp=True):
   '''
@@ -282,6 +348,9 @@ def run_once(N1,N2,N3,K,M,T,C,sample_exp=True):
 
 
 def main():
+  '''
+  Set meta-parameters and do a single run
+  '''
   # Size of system
   N1 = 2 # number of resource users that benefit from extraction only
   N2 = 1 # number of users with both extractive and non-extractive use
