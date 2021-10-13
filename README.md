@@ -25,7 +25,7 @@ Plotly](https://plotly.com/python/) (optional)
   dp_dH, dc_dw_p, dc_dw_n, dl_dx, du_dx, di_dK_p, di_dK_n, di_dy_p, di_dy_n, F, H, W, K_p) = run_system(N1, N2, N3, K, M, T, C, sample_exp)
 ```
 
-## Diagram of process for a single model realization (as executed by function run_system)
+** Diagram of process for a single model realization (as executed by function run_system) **
 
 ![code_flowchart](https://user-images.githubusercontent.com/44376656/137199655-fe7e6be0-d745-4419-a1f5-a86405874f79.png)
 
