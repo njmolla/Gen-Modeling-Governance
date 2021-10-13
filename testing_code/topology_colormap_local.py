@@ -1,4 +1,4 @@
-from GM_code import run_system
+from run_gen_model import run_system
 from sample_setup import sample_composition
 import numpy as np
 import pickle

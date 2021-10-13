@@ -3,7 +3,7 @@ from numba import jit
 
 
 @jit(nopython=True)
-def determine_stability(N,K,M,T,
+def compute_Jacobian(N,K,M,T,
       phi,psis,alphas,betas,beta_hats,beta_tildes,beta_bars,sigmas,etas,lambdas,eta_bars,mus,
       ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,du_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
       F,H,W,K_p):
@@ -90,18 +90,20 @@ def determine_stability(N,K,M,T,
 
   return J
 
-"""
-This does
-   lhs[conditions] = rhs[conditions]
-lhs and rhs are any numpy arrays with the same shape
-conditions is a boolean numpy array with the same shape
-For example, to do
-   x[x > 0] = y[x > 0]
-use
-    assign_when(x, y, x > 0)
-"""
+
 @jit(nopython=True)
 def assign_when(lhs, rhs, conditions):
+  """
+  This does
+     lhs[conditions] = rhs[conditions]
+  (this is done because Numba doesn't like logical indexing)
+  lhs and rhs are any numpy arrays with the same shape
+  conditions is a boolean numpy array with the same shape
+  For example, to do
+     x[x > 0] = y[x > 0]
+  use
+      assign_when(x, y, x > 0)
+  """
   for nd_index in np.ndindex(lhs.shape):
     if conditions[nd_index]:
       lhs[nd_index] = rhs[nd_index]

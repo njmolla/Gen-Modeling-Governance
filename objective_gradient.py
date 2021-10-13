@@ -3,7 +3,7 @@ from compute_J import determine_stability
 from compute_J import assign_when
 from numba import jit
 
-def SS_derivatives(strategy, n, l, J, N,K,M,T,
+def steady_state_gradient(strategy, n, l, J, N,K,M,T,
           phi,psis,alphas,betas,beta_hats,beta_tildes,beta_bars,sigmas,etas,lambdas,eta_bars,mus,
           ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,du_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
           F,H,W,K_p,drdot_dF, dxdot_dF, dydot_dF, drdot_dH, dxdot_dH, dydot_dH, drdot_dW_p, dxdot_dW_p, dydot_dW_p, drdot_dW_n, dxdot_dW_n, dydot_dW_n,drdot_dK_p,
@@ -58,7 +58,7 @@ def objective_grad(strategy, n, l, J, N,K,M,T,
   # for extraction
   # n's objective, l's strategy (same for resource users) n,l used to be i,j
   if betas[0,n] > 0:  # Check if we are optimizing n's extraction
-                             #### TODO: replace 0.000001 with named constant, put elsewhere too
+                             
 
     np.reshape(de_dg[0,:,n]*dg_dy[:,n], (M,1,1))
 

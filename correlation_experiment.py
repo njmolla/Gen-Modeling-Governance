@@ -1,5 +1,5 @@
 import numpy as np
-from GM_code import run_system
+from run_gen_model import run_system
 from mpi4py import MPI
 import pandas as pd
 import pickle
@@ -22,6 +22,7 @@ stability_list = []
 
 # specify composition (composition is fixed for all experiments)
 
+# Large system
 N1 = 3
 N2 = 3
 N3 = 3
@@ -30,6 +31,7 @@ M = 3
 T = N1+N2+N3+K+M+1
 C = 0.4
 
+# Small system
 # N1 = 1
 # N2 = 1
 # N3 = 0

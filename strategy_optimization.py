@@ -1,7 +1,7 @@
 import numpy as np
 from scipy import optimize
 from objective_gradient import objective_grad
-from objective_gradient import SS_derivatives
+from objective_gradient import steady_state_gradient
 # import matplotlib.pyplot as plt
 
 def correct_scale_params(sigmas, lambdas, alloc_params, i, N, K, betas, beta_hats, beta_tildes, beta_bars, du_dx, etas, eta_bars):
@@ -91,7 +91,7 @@ def grad_descent_constrained(initial_point, alpha, v, n, l, J, N,K,M,T,
   x = initial_point  # strategy
   # calculate how steady state changes with respect to strategy parameters
   dR_dF, dX_dF, dY_dF, dR_dH, dX_dH, dY_dH, dR_dW_p, dX_dW_p, dY_dW_p, dR_dW_n, dX_dW_n, dY_dW_n, dR_dK_p, dX_dK_p, dY_dK_p, dR_dK_n, dX_dK_n, dY_dK_n\
-  = SS_derivatives(x, n, l, J, N,K,M,T,          
+  = steady_state_gradient(x, n, l, J, N,K,M,T,          
     phi,psis,alphas,betas,beta_hats,beta_tildes,beta_bars,sigmas,etas,lambdas,eta_bars,mus,
     ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,du_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
     F,H,W,K_p, drdot_dF, dxdot_dF, dydot_dF, drdot_dH, dxdot_dH, dydot_dH, drdot_dW_p, dxdot_dW_p, dydot_dW_p, drdot_dW_n, 
@@ -130,7 +130,7 @@ def grad_descent_constrained(initial_point, alpha, v, n, l, J, N,K,M,T,
 
   return x, v # normally return only x
 
-def compute_RHS_gradient(N,K,M,T,
+def ODE_gradient(N,K,M,T,
     phi,psis,alphas,betas,beta_hats,beta_tildes,beta_bars,sigmas,etas,lambdas,eta_bars,mus,
     ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,du_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n):
   # Compute how the rhs of system changes with respect to each strategy parameter
@@ -217,7 +217,7 @@ def nash_equilibrium(max_iters,J,N,K,M,T,
   has_zero_betas = False
   #
   (drdot_dF, dxdot_dF, dydot_dF, drdot_dH, dxdot_dH, dydot_dH, drdot_dW_p, dxdot_dW_p, dydot_dW_p, drdot_dW_n, dxdot_dW_n, dydot_dW_n,drdot_dK_p,
-  dxdot_dK_p, dydot_dK_p, drdot_dK_n, dxdot_dK_n, dydot_dK_n) = compute_RHS_gradient(N,K,M,T,
+  dxdot_dK_p, dydot_dK_p, drdot_dK_n, dxdot_dK_n, dydot_dK_n) = ODE_gradient(N,K,M,T,
                                                                                      phi,psis,alphas,betas,beta_hats,beta_tildes,beta_bars,sigmas,etas,lambdas,eta_bars,mus,
                                                                                      ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,du_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n)
   while (max_diff > tolerance or sum_below_1) and iterations < max_iters:
@@ -243,7 +243,7 @@ def nash_equilibrium(max_iters,J,N,K,M,T,
       if np.count_nonzero(new_strategy[2*M*N:2*M*N+N]) < np.count_nonzero(strategy[i][2*M*N:2*M*N+N]) or np.any(strategy[i][2*M*N:2*M*N+N] * new_strategy[2*M*N:2*M*N+N] < 0) and (np.any(sigmas > 0) or np.any(lambdas > 0)) :
         correct_scale_params(sigmas, lambdas, new_strategy[2*M*N:2*M*N+N], i, N, K, betas, beta_hats, beta_tildes, beta_bars, du_dx, etas, eta_bars)
         (drdot_dF, dxdot_dF, dydot_dF, drdot_dH, dxdot_dH, dydot_dH, drdot_dW_p, dxdot_dW_p, dydot_dW_p, drdot_dW_n, dxdot_dW_n, dydot_dW_n,drdot_dK_p,
-         dxdot_dK_p, dydot_dK_p, drdot_dK_n, dxdot_dK_n, dydot_dK_n) = compute_RHS_gradient(N,K,M,T,
+         dxdot_dK_p, dydot_dK_p, drdot_dK_n, dxdot_dK_n, dydot_dK_n) = ODE_gradient(N,K,M,T,
                                                                                      phi,psis,alphas,betas,beta_hats,beta_tildes,beta_bars,sigmas,etas,lambdas,eta_bars,mus,
                                                                                      ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,du_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n)
         #print('updating scale params')

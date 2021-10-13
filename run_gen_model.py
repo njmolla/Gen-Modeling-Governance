@@ -1,6 +1,6 @@
 import numpy as np
 import networkx as nx
-from compute_J import determine_stability
+from compute_J import compute_Jacobian
 from strategy_optimization import nash_equilibrium
 
 
@@ -126,7 +126,7 @@ def sample_exp_params(N1,N2,N3,K,M,T,C):
 
   return de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,du_dx,dl_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n
 
-def fix_exp_params(N1,N2,N3,K,M,T,C):
+def set_fixed_exp_params(N1,N2,N3,K,M,T,C):
   '''
   Takes in system meta-parameters and sets the exponent parameters to fixed values
   (used for the topology experiments)
@@ -179,7 +179,8 @@ def fix_exp_params(N1,N2,N3,K,M,T,C):
   return ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,du_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n
 
 ##########################################################################################
-def run_system(N1,N2,N3,K,M,T,C,sample_exp):
+
+def run_system(N1,N2,N3,K,M,T,C,sample_exp=True):
   '''
   Takes in system meta-parameters and produces a system parameterization and computes
   stability of that system
@@ -214,7 +215,7 @@ def run_system(N1,N2,N3,K,M,T,C,sample_exp):
       upper_bound = np.sum(psis*de_dr)
       ds_dr = np.random.uniform(-1,min(1,upper_bound),(1))
     else:
-      ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,du_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n = fix_exp_params(N1,N2,N3,K,M,T,C)
+      ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,du_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n = set_fixed_exp_params(N1,N2,N3,K,M,T,C)
     
     # ensure dxdot_dx is negative for non-RUs
     while np.any(beta_bars*du_dx - eta_bars*dl_dx > 0):
@@ -234,7 +235,7 @@ def run_system(N1,N2,N3,K,M,T,C,sample_exp):
     K_p = np.ones((N,M))  # effort for more influence for gov orgs $
 
     # calculate Jacobian
-    J = determine_stability(N,K,M,T,
+    J = compute_Jacobian(N,K,M,T,
       phi,psis,alphas,betas,beta_hats,beta_tildes,beta_bars,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,du_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
       F,H,W,K_p)
     # filter out systems that are not weakly connected even with all strategy params turned on
@@ -254,7 +255,7 @@ def run_system(N1,N2,N3,K,M,T,C,sample_exp):
       phi = np.random.rand(1) # $
       psis = np.zeros([1,N]) # $
       psis[0,0:N1+N2] = np.random.dirichlet(np.ones(N1+N2),1) # need to sum to 1
-      J = determine_stability(N,K,M,T,
+      J = compute_Jacobian(N,K,M,T,
       phi,psis,alphas,betas,beta_hats,beta_tildes,beta_bars,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,du_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
       F,H,W,K_p)
       print('resampling resource params')
@@ -263,7 +264,7 @@ def run_system(N1,N2,N3,K,M,T,C,sample_exp):
     while np.any(np.diagonal(J)[-M:] > 0):
       di_dy_p = np.random.rand(1,M)
       di_dy_n = np.random.uniform(0,2,(1,M))
-      J = determine_stability(N,K,M,T,
+      J = compute_Jacobian(N,K,M,T,
       phi,psis,alphas,betas,beta_hats,beta_tildes,beta_bars,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,du_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
       F,H,W,K_p)
       print('resampling gov params')
@@ -285,8 +286,7 @@ def run_system(N1,N2,N3,K,M,T,C,sample_exp):
     # Compute Jacobian and see if system is weakly connected
     # ------------------------------------------------------------------------
 
-    # check stability and use Jacobian to check whether system is weakly connected
-    J = determine_stability(N,K,M,T,
+    J = compute_Jacobian(N,K,M,T,
       phi,psis,alphas,betas,beta_hats,beta_tildes,beta_bars,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,du_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
       F,H,W,K_p)
 
@@ -331,22 +331,6 @@ def run_system(N1,N2,N3,K,M,T,C,sample_exp):
       F,H,W,K_p)
 
 
-def run_once(N1,N2,N3,K,M,T,C,sample_exp=True):
-  '''
-  Do a single run and return more detailed output.
-  '''
-  np.random.seed(667)
-
-  (stability, J, converged, strategy_history, grad, total_connectance,
-      phi,psis,alphas,betas,beta_hats,beta_tildes,beta_bars,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,du_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
-      F,H,W,K_p) = run_system(N1,N2,N3,K,M,T,C, sample_exp)
-
-
-  return (N1,N2,N3,K,M,T,C,stability, J, converged, strategy_history, grad, total_connectance,
-      phi,psis,alphas,betas,beta_hats,beta_tildes,beta_bars,sigmas,etas,lambdas,eta_bars,mus,ds_dr,de_dr,de_dg,dg_dF,dg_dy,dp_dy,db_de,da_dr,dq_da,da_dp,dp_dH,dc_dw_p,dc_dw_n,dl_dx,du_dx,di_dK_p,di_dK_n,di_dy_p,di_dy_n,
-      F,H,W,K_p)
-
-
 def main():
   '''
   Set meta-parameters and do a single run
@@ -359,11 +343,13 @@ def main():
   M = 2  # number of gov orgs
   T = N1 + N2 + N3 + K + M + 1  # total number of state variables
 
-  # Connectance of system (for different interactions)
+  # Connectance of system
   C = 0.1  # Connectance between governance organizations and resource users.
             # (proportion of resource extraction/access interactions influenced by governance)
+            
+  np.random.seed(667)
 
-  return run_once(N1,N2,N3,K,M,T,C)
+  return run_system(N1,N2,N3,K,M,T,C)
 
 
 if __name__ == "__main__":
