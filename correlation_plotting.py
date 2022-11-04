@@ -14,7 +14,7 @@ def compute_correlation(param, stability):
   denom = len(stability)*np.std(param)*np.std(stability)
   return np.where(denom < 1e-10, 0, num/denom)
 #
-folder = 'Correlation_15//raw_data//'
+folder = 'Data//Correlation_15//raw_data//'
 files = glob.glob(folder + 'corr_data' + '_*')
 frames = []
 for file in files:

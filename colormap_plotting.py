@@ -19,10 +19,10 @@ def process_size_vs_connectance():
   '''Processes and plots results of the size vs connectance experiments'''
   
   # import folder of files
-  data_name = 'data//Colormap//'
+  data_name = 'data//colormap_data_updated//'
   folder = Path.cwd().joinpath(data_name)
-  file_names = sorted(folder.glob('round_1//data_*'), key=_key_func)
-  file_names = file_names +(sorted(folder.glob('round_2//data_*'), key=_key_func))
+  # file_names = sorted(folder.glob('round_1//data_*'), key=_key_func)
+  # file_names = file_names +(sorted(folder.glob('round_2//data_*'), key=_key_func))
   connectances = np.linspace(0.1,0.8,32)
   cells_per_row = len(connectances)
   num_processors = 96
